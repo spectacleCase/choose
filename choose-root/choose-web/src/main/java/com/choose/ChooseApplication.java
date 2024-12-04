@@ -19,7 +19,7 @@ import javax.annotation.Resource;
  * @since 2024/5/27 上午12:09
  */
 @SpringBootApplication(scanBasePackages = {"com.choose", "com.choose_admin"})
-@EnableScheduling // 开启调度任务1
+@EnableScheduling // 开启调度任务
 @EnableAspectJAutoProxy(exposeProxy = true)
 public class ChooseApplication implements CommandLineRunner {
 
