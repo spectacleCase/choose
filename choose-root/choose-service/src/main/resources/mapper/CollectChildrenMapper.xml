@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.choose.mapper.CollectChildrenMapper">
+
+    <select id="selectCollectchilrenVoList" resultType="com.choose.dishes.vo.CollectChildrenVo">
+        SELECT
+            id,
+            parent_id ,
+            dishes_name,
+            dishes_image,
+            coordinate,
+            dish_id
+        FROM
+            choose_collect_chilren
+        WHERE
+            userid = #{userId}
+          AND parent_id = #{collectid}
+          AND is_delete = 0
+        LIMIT #{offset}, #{size}
+    </select>
+
+</mapper>

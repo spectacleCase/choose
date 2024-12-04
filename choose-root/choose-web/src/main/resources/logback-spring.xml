@@ -1,0 +1,50 @@
+<configuration>
+
+    <!-- 用来定义变量，name 就是属性，value 就是值，可以在需要的地方引入 name，实现复用 -->
+    <!-- Ps: 这里实际上就是在配置日志文文件输出的位置 -->
+    <property name="LOG_HOME" value="./choose-root/logs"/>
+
+
+    <!-- 引入spirng boot默认的logback配置文件(主要用他来输出彩色的控制台) -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!--
+        appender用来格式化日志输出节点，有俩个属性name和class，class用来指定哪种输出策略，
+        常用就是控制台输出策略和文件输出策略。
+     -->
+    <!-- Console 输出设置 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+            <!--            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+            <charset>utf8</charset>
+            <!--默认格式输出: 使用彩色面板-->
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 按照每天生成日志文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--日志文件输出的文件名和位置: 可以使用相对路径或者绝对路径，如果是相对路径，会直接在当前项目根目录下生成-->
+            <fileNamePattern>${LOG_HOME}/readJson.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!--只保留最近90天的日志-->
+            <maxHistory>90</maxHistory>
+            <!--用来指定日志文件的上限大小，那么到了这个值，就会删除旧的日志-->
+            <!--            <totalSizeCap>1GB</totalSizeCap>-->
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+         root 标签是必须存在的，并且必须放在最后配置. 用来指定最基础的日志输出级别，只有一个level属性(级别最低是 info，否则报错)
+         可以包含零个或多个元素，appender-ref 就是在声明需要使用到哪些自定义配置，最后添加到这个logger。
+     -->
+    <root level="INFO">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

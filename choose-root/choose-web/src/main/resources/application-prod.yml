@@ -1,0 +1,98 @@
+# 生产环境配置
+server:
+  port: 12150
+
+log:
+  # logstash 地址和端口
+  logstash-host: 127.0.0.1:9600
+
+spring:
+  application:
+    name: springboot-choose
+
+  # 开启aop切面
+  aop:
+    auto: true
+    proxy-target-class: true
+
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    username: root
+    password: 密码
+    url: jdbc:mysql://localhost:3306/choose?serverTimezone=UTC&useSSL=false&characterEncoding=utf8&serverTimezone=GMT
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  redis:
+    database: 0
+    port: 6379
+    host: localhost
+    password:
+  # 配置文件上传大小限制（minio文件上传）
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #开启sql日志
+  mapper-locations: classpath*:mapper/*.xml
+  # 设置别名包扫描路径，通过该属性可以给包中的类注册别名
+  type-aliases-package: com.universe.model
+
+auth:
+  redis-token:
+    timeout: 6048000000 # 7天的毫秒
+
+# 对象存储
+# todo 需替换配置 腾讯对象存储
+cos:
+  client:
+    accessKey: "accessKey" # SecretId
+    secretKey: "secretKey"  # SecretKey
+    region: "region" # 地域名
+    bucket: "bucket" # 存储桶名称
+
+minio:
+  endpoint: "服务器IP+端口"
+  accessKey: "accessKey"
+  secretKey: "secretKey"
+  bucketName: "bucketName"
+  readPath: "readPath"
+
+user:
+  defImage: '默认图片'
+
+# 绝对路径
+local:
+  path: "D:/Workspace/Java/choose/choose/choose-root/file/images/"
+  get_image: "http://localhost:${server.port}/choose/common/v1/getImage?filename="
+
+system:
+  compressed_url: "choose-root/file/compressed"
+  map_api_key: "高德地图key"
+  cos_host: "cos存储配置"
+  deep_seek_api_key: "deepSeek大模型配置"
+  storage_strategy: "local" # 图床配置
+  exclude_path: "/choose/user/v1/login-applet,/choose-admin/auto/v1/login,/choose/common/v1/getImage"
+
+
+wechat:
+  appid: 'appid'
+  secret: 'secret'
+
+
+
+
+# 管理员名单
+admins:
+  users:
+    choose1125:
+      id: 12610
+      username: choose1125
+      password: choose1125

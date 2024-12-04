@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.choose.mapper.CommentNotificationsMapper">
+
+    <select id="selectUserCommentVoList" resultType="com.choose.comment.vo.UserCommentVo">
+        SELECT
+            ccn.comment_id AS commentId,
+            cc.user_name AS userName,
+            cc.user_avatar AS userAvatar,
+            cc.content AS content,
+            cc.top_id AS  topID,
+            DATE_FORMAT(cc.create_time, '%Y-%m-%d %H:%i:%s') AS createTimeText
+        FROM
+            choose_comment_notifications ccn
+                INNER JOIN
+            choose_shop_comment cc ON ccn.comment_id = cc.id
+        WHERE
+            ccn.user_id = #{userId}
+          AND ccn.is_delete = 0
+          AND cc.is_delete = 0
+        ORDER BY
+            cc.create_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+</mapper>

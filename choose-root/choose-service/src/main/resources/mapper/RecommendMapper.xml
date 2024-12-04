@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.choose.mapper.RecommendMapper">
+
+    <resultMap id="TagResultMap" type="com.choose.recommoend.pojos.Recommend">
+        <id column="id" property="id" javaType="java.lang.Long"/>
+        <result column="user_id" property="userId" javaType="java.lang.Long"/>
+        <result column="dishes_id" property="dishesId" javaType="java.lang.Long"/>
+        <result column="description" property="description" javaType="java.lang.String"/>
+        <result column="update_time" property="updateTime" javaType="java.util.Date"/>
+        <result column="create_time" property="createTime" javaType="java.util.Date"/>
+        <result column="is_delete" property="isDelete" javaType="java.lang.Boolean"/>
+    </resultMap>
+
+    <resultMap id="RecommendListVoResultMap" type="com.choose.recommoend.vo.RecommendListVo">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="dishesId" column="dishes_id"/>
+        <result property="shopId" column="shop_id"/>
+        <result property="image" column="image"/>
+        <result property="tagName" column="tag_name"/>
+        <result property="dishesName" column="dishes_name"/>
+        <result property="distance" column="distance"/>
+        <result property="description" column="description"/>
+    </resultMap>
+
+
+    <select id="getRecommendRecordList" resultType="com.choose.recommoend.vo.RecommendListVo">
+        SELECT
+            cr.id,
+            cr.user_id,
+            cr.dishes_id,
+            cd.image,
+            cd.dishes_name,
+            cs.shop_name AS tag_name,
+            cs.coordinate AS distance,
+            cd.shop AS  shopId,
+            cr.description
+        FROM
+            choose_recommend cr
+                JOIN
+            choose_dishes cd ON cr.dishes_id = cd.id
+                JOIN
+            choose_shops cs ON cd.shop = cs.id
+        WHERE
+            cr.is_delete = 0
+          AND cd.is_delete = 0
+          AND cs.is_delete = 0
+          AND cr.user_id = #{userId}
+        ORDER BY
+            cr.update_time DESC
+        LIMIT #{current}, #{size}
+    </select>
+    <select id="getWeekRecommend" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM choose_recommend
+        WHERE DATE(create_time) = CURDATE() - INTERVAL (DAYOFWEEK(CURDATE()) - 2) DAY
+        UNION ALL
+        SELECT COUNT(*)
+        FROM choose_recommend
+        WHERE DATE(create_time) = CURDATE() - INTERVAL (DAYOFWEEK(CURDATE()) - 3) DAY
+        UNION ALL
+        SELECT COUNT(*)
+        FROM choose_recommend
+        WHERE DATE(create_time) = CURDATE() - INTERVAL (DAYOFWEEK(CURDATE()) - 4) DAY
+        UNION ALL
+        SELECT COUNT(*)
+        FROM choose_recommend
+        WHERE DATE(create_time) = CURDATE() - INTERVAL (DAYOFWEEK(CURDATE()) - 5) DAY
+        UNION ALL
+        SELECT COUNT(*)
+        FROM choose_recommend
+        WHERE DATE(create_time) = CURDATE() - INTERVAL (DAYOFWEEK(CURDATE()) - 6) DAY
+        UNION ALL
+        SELECT COUNT(*)
+        FROM choose_recommend
+        WHERE DATE(create_time) = CURDATE() - INTERVAL (DAYOFWEEK(CURDATE()) - 7) DAY
+        UNION ALL
+        SELECT COUNT(*)
+        FROM choose_recommend
+        WHERE DATE(create_time) = CURDATE() - INTERVAL (DAYOFWEEK(CURDATE()) - 8) DAY
+    </select>
+
+
+</mapper>
