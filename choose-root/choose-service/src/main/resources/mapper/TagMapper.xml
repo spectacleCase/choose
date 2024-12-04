@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.choose.mapper.TagMapper">
+
+    <!-- 定义结果映射 -->
+    <resultMap id="tagResultMap" type="map">
+        <id column="model_id" property="modelId" javaType="long"/>
+        <collection property="tags" ofType="string" javaType="list">
+            <result column="tag" javaType="string"/>
+        </collection>
+    </resultMap>
+
+    <!-- 定义 SQL 查询 -->
+    <select id="extractTagsByModelIds" resultMap="tagResultMap">
+        SELECT
+        cta.model_id AS model_id,
+        ct.tag AS tag
+        FROM
+        choose_tag_association cta
+        JOIN
+        choose_tag ct ON cta.tag_id = ct.id
+        WHERE
+        cta.model_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND cta.is_delete = 0
+        AND ct.is_delete = 0
+    </select>
+
+
+    <select id="getDishesIdTag" resultType="java.lang.String">
+        select tag from  choose_tag_association cta join choose_tag ct on cta.tag_id = ct.id
+        where cta.model_id = #{id}
+        and cta.is_delete = 0
+        and ct.is_delete = 0
+    </select>
+
+</mapper>

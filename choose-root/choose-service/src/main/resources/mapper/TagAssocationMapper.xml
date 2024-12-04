@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.choose.mapper.TagAssociationMapper">
+
+    <resultMap id="TagResultMap" type="com.choose.tag.pojos.Tag">
+        <id column="id" property="id" javaType="java.lang.Long"/>
+        <result column="tag" property="tag" javaType="java.lang.String"/>
+        <result column="parent_tag_id" property="parentTagId" javaType="java.lang.Long"/>
+        <result column="update_time" property="updateTime" javaType="java.util.Date"/>
+        <result column="create_time" property="createTime" javaType="java.util.Date"/>
+        <result column="is_delete" property="isDelete" javaType="java.lang.Boolean"/>
+    </resultMap>
+
+    <select id="getTagsByModelId" parameterType="long" resultMap="TagResultMap">
+        SELECT t.id, t.tag
+        FROM choose_tag t
+                 JOIN choose_tag_association ta ON t.id = ta.tag_id
+        WHERE ta.model_id = #{modelId}
+          AND t.is_delete = 0
+          AND ta.is_delete = 0
+    </select>
+
+</mapper>

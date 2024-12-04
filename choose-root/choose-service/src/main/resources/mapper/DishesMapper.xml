@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.choose.mapper.DishesMapper">
+
+    <!-- 定义RecommendVo的resultMap -->
+    <resultMap id="RecommendVoResultMap" type="com.choose.recommoend.vo.RecommendVo">
+        <id property="id" column="id"/>
+        <result property="dishesName" column="dishes_name"/>
+        <result property="image" column="image"/>
+        <result property="columnId" column="column_id"/>
+        <result property="shopId" column="shop"/>
+        <result property="shopName" column="shop_name"/>
+        <result property="mark" column="mark"/>
+        <result property="coordinate" column="coordinate"/>
+        <result property="aiDescription" column="ai_description"/>
+        <collection property="tagName" ofType="java.lang.String" javaType="list">
+            <result column="tag"/>
+        </collection>
+    </resultMap>
+
+    <resultMap id="SearchVoResultMap" type="com.choose.search.vo.SearchVo">
+        <id property="shopId" column="shop_id"/>
+        <result property="shopName" column="shop_name"/>
+        <result property="rating" column="rating"/>
+        <result property="shopImage" column="shop_image"/>
+        <result property="address" column="address"/>
+        <collection property="dishesList" ofType="com.choose.search.vo.SearchDishesVo">
+            <result property="name" column="dishes_name"/>
+            <result property="image" column="dishes_image"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectCoordinate" resultType="java.lang.String">
+        SELECT
+            cs.coordinate
+        FROM
+            choose_dishes AS cd
+                INNER JOIN
+            choose_shops AS cs
+            ON
+                cd.shop = cs.id
+        WHERE
+            cd.id = #{dishesId};
+    </select>
+
+    <resultMap id="PendingCountsResultMap" type="com.choose.admin.common.TodoItems">
+        <result property="pendingShop" column="pending_shops_count"/>
+        <result property="pendingDishes" column="pending_dishes_count"/>
+    </resultMap>
+
+    <select id="getPendingList" resultType="com.choose.admin.common.TodoItems" resultMap="PendingCountsResultMap">
+        select
+                (select count(*) from choose_shops where is_audit = 0) as pending_shops_count,
+                (select count(*) from choose_dishes where is_audit = 0) as pending_dishes_count
+    </select>
+
+
+
+
+    <!-- 查询RecommendVo列表 -->
+    <select id="getRecommendVosByIds" resultMap="RecommendVoResultMap">
+        SELECT
+        cd.id,
+        cd.dishes_name,
+        cd.image,
+        cd.column_id,
+        cd.shop,
+        cs.shop_name,
+        cd.mark,
+        cs.coordinate,
+        ct.tag,
+        'AI Description Placeholder' AS ai_description
+        FROM
+        choose_dishes cd
+        LEFT JOIN
+        choose_shops cs ON cd.shop = cs.id
+        LEFT JOIN
+        choose_tag_association cta ON cd.id = cta.model_id
+        LEFT JOIN
+        choose_tag ct ON cta.tag_id = ct.id
+        WHERE
+        cd.id IN
+        <foreach collection="list" item="dishId" open="(" separator="," close=")">
+            #{dishId}
+        </foreach>
+    </select>
+
+
+    <select id="selectSearchTerm" resultType="com.choose.common.SearchTerm">
+        SELECT
+            cs.id as shopId,
+            cd.dishes_name AS name,
+            cd.image
+        FROM
+            choose_dishes AS cd
+                LEFT JOIN
+            choose_shops cs ON cd.shop = cs.id
+        WHERE
+            cd.dishes_name LIKE CONCAT('%', #{keyword}, '%')
+          AND cs.is_delete = 0
+          AND cd.is_delete = 0
+    </select>
+
+    <select id="searchShopsAndDishes" resultMap="SearchVoResultMap">
+        SELECT
+            s.id AS shop_id,
+            s.shop_name,
+            s.image AS shop_image,
+            s.mark AS rating,
+            s.coordinate AS address,
+            d.id AS dishes_id,
+            d.dishes_name AS dishes_name,
+            d.image AS dishes_image
+        FROM
+            choose_shops s
+                LEFT JOIN
+            choose_dishes d ON s.id = d.shop
+        WHERE
+            s.is_delete = 0
+          AND s.is_audit = 1
+          AND (
+            s.shop_name LIKE CONCAT('%', #{searchTerm}, '%')
+                OR d.dishes_name LIKE CONCAT('%', #{searchTerm}, '%')
+            )
+        ORDER BY
+            s.id, d.id
+    </select>
+
+
+</mapper>

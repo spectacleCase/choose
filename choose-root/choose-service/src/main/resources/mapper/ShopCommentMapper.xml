@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.choose.mapper.ShopCommentMapper">
+
+    <resultMap id="ShopCommentVoResultMap" type="com.choose.comment.vo.ShopCommentVo">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="top_id" property="topId"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="content" property="content"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="user_avatar" property="userAvatar"/>
+        <result column="user_name" property="userName"/>
+        <result column="create_time" property="createTime"/>
+        <collection property="children" ofType="com.choose.comment.vo.ShopCommentVo" column="id"
+                    select="selectChildrenComments"/>
+    </resultMap>
+
+    <resultMap id="AllShopCommentVoResultMap" type="com.choose.comment.vo.AllShopCommentVo">
+        <id column="id" property="id"/>
+        <result column="user_avatar" property="avatar"/>
+        <result column="user_name" property="userName"/>
+        <result column="create_time" property="createTime"/>
+        <result column="content" property="content"/>
+        <result column="number" property="number"/>
+        <result column="image_url" property="images"/>
+        <association property="subComment" javaType="com.choose.comment.vo.ShopUserCommentVo">
+            <result column="sub_user_name" property="userName"/>
+            <result column="sub_user_avatar" property="avatar"/>
+            <result column="sub_content" property="content"/>
+        </association>
+    </resultMap>
+
+    <select id="selectAllComments" resultMap="AllShopCommentVoResultMap">
+        SELECT c.id,
+               c.user_avatar,
+               c.user_name,
+               DATE_FORMAT(c.create_time, '%Y-%m-%d %H:%i:%s') AS create_time,
+               c.content,
+               c.image_url,
+               (SELECT (COUNT(*) - 1 )
+                FROM choose_shop_comment cc
+                WHERE cc.parent_id = c.id
+                  AND cc.is_delete = 0) + 1                    AS number,
+               (SELECT cc.user_name
+                FROM choose_shop_comment cc
+                WHERE cc.parent_id = c.id
+                  AND cc.is_delete = 0
+                ORDER BY cc.create_time ASC
+                LIMIT 1)                                       AS sub_user_name,
+               (SELECT cc.user_avatar
+                FROM choose_shop_comment cc
+                WHERE cc.parent_id = c.id
+                  AND cc.is_delete = 0
+                ORDER BY cc.create_time ASC
+                LIMIT 1)                                       AS sub_user_avatar,
+               (SELECT cc.content
+                FROM choose_shop_comment cc
+                WHERE cc.parent_id = c.id
+                  AND cc.is_delete = 0
+                ORDER BY cc.create_time ASC
+                LIMIT 1)                                       AS sub_content
+        FROM choose_shop_comment c
+        WHERE c.top_id = #{topId}
+          AND c.is_delete = 0
+          AND c.parent_id IS NULL
+        ORDER BY c.create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <resultMap id="ShopCommentDetailVoResultMap" type="com.choose.comment.vo.ShopCommentDetailVo">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="user_avatar" property="avatar"/>
+        <result column="user_name" property="userName"/>
+        <result column="create_time" property="createTime"/>
+        <result column="content" property="content"/>
+        <result column="image_url" property="images"/>
+        <result column="reply_to_name" property="replyToName"/>
+        <collection property="subComments" ofType="com.choose.comment.vo.ShopCommentDetailVo" column="id" select="selectSubComments"/>
+    </resultMap>
+
+    <resultMap id="LatestCommentListVoMap" type="com.choose.comment.vo.LatestCommentListVo">
+        <id column="id" property="id"/>
+        <result property="name" column="user_name"/>
+        <result property="avatar" column="user_avatar"/>
+        <result property="createTimeText" column="create_time"/>
+        <result property="content" column="content"/>
+        <result property="images" column="image_url"/>
+        <result property="nums" column="nums"/>
+    </resultMap>
+
+    <select id="selectSubComments" resultMap="ShopCommentDetailVoResultMap">
+        SELECT
+            id,
+            user_id,
+            user_avatar,
+            user_name,
+            DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time,
+            content,
+            image_url,
+            (
+                SELECT user_name
+                FROM choose_shop_comment cc
+                WHERE cc.id = c.parent_id
+            ) AS reply_to_name
+        FROM
+            choose_shop_comment c
+        WHERE
+            parent_id = #{id}
+          AND is_delete = 0
+        ORDER BY
+            create_time ASC
+    </select>
+
+    <select id="selectCommentDetailById" resultMap="ShopCommentDetailVoResultMap">
+        SELECT
+            id,
+            user_id,
+            user_avatar,
+            user_name,
+            DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time,
+            content,
+            image_url,
+            (
+                SELECT user_name
+                FROM choose_shop_comment cc
+                WHERE cc.id = c.parent_id
+            ) AS reply_to_name
+        FROM
+            choose_shop_comment c
+        WHERE
+            id = #{parentId}
+          AND is_delete = 0
+    </select>
+
+    <select id="selectShopCommentList" resultMap="ShopCommentVoResultMap">
+        SELECT id,
+               user_id,
+               top_id,
+               parent_id,
+               content,
+               image_url,
+               user_avatar,
+               user_name,
+               create_time
+        FROM choose_shop_comment
+        WHERE top_id = #{topId}
+          AND is_delete = 0
+          AND parent_id IS NULL
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectChildrenComments" resultMap="ShopCommentVoResultMap">
+        SELECT id,
+               user_id,
+               top_id,
+               parent_id,
+               content,
+               image_url,
+               user_avatar,
+               user_name,
+               create_time
+        FROM choose_shop_comment
+        WHERE parent_id = #{id}
+          AND is_delete = 0
+        ORDER BY create_time DESC
+        LIMIT 0, 3
+    </select>
+    <select id="getLatestCommentList" resultMap="LatestCommentListVoMap">
+        SELECT
+        csc.id,
+        csc.user_name,
+        csc.user_avatar,
+        csc.create_time,
+        csc.content AS content,
+        csc.image_url,
+        (SELECT COUNT(*) FROM choose_shop_comment WHERE parent_id = csc.id) AS nums
+        FROM
+        choose_shop_comment csc
+        WHERE
+        csc.is_delete = 0 and csc.parent_id IS NULL
+        ORDER BY
+        <choose>
+            <when test="sortByNums">
+                nums DESC, create_time DESC
+            </when>
+            <otherwise>
+                create_time DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+</mapper>
