@@ -95,5 +95,10 @@ public class UserController {
         return Result.ok(userService.getUserTag());
     }
 
+    @PostMapping("/v1/getUserOR")
+    public Result getUserOR() {
+        return Result.ok(userService.userORCode());
+    }
+
 
 }

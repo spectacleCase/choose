@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import javax.validation.constraints.NotBlank;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -316,6 +317,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return;
         }
         throw new CustomException(AppHttpCodeEnum.PARAM_REQUIRE);
+    }
+
+    /**
+     * 用户二维码
+     */
+    @Override
+    public String userORCode() {
+        String id = UserLocalThread.getUser().getId();
+        User user = userMapper.selectById(id);
+        String code  = "";
+        try {
+            code = StringUtils.crateQRCodeImg("png",id, 300, 300,FileConstant.COS_HOST + user.getAvatar());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return code;
     }
 }
 
