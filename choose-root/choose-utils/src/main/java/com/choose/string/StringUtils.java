@@ -1,23 +1,50 @@
 package com.choose.string;
 
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import org.springframework.util.AntPathMatcher;
 
+import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
+import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
+
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+
+import javax.imageio.ImageIO;
+import javax.servlet.ServletOutputStream;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * 字符串工具类
- * 
+ *
  * @author 桌角的眼镜
  */
-public class StringUtils extends org.apache.commons.lang3.StringUtils
-{
-    /** 空字符串 */
+public class StringUtils extends org.apache.commons.lang3.StringUtils {
+    /**
+     * 空字符串
+     */
     private static final String NULLSTR = "";
 
-    /** 下划线 */
+    /**
+     * 下划线
+     */
     private static final char SEPARATOR = '_';
 
-    /** 星号 */
+    /**
+     * 星号
+     */
     private static final char ASTERISK = '*';
 
 
@@ -39,182 +66,309 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
     }
 
     /**
+     * 生成加密后的二维码字符串 Base64字符串二维码
+     *
+     * @param content 二维码正文
+     * @param width   二维码宽
+     * @param height  二维码高
+     * @return base64 编码后的字符串
+     * @throws IOException
+     */
+    public static String crateQRCode(String content, int width, int height) throws IOException {
+        String resultImage = "";
+        if (!StringUtils.isEmpty(content)) {
+            ServletOutputStream stream = null;
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            @SuppressWarnings("rawtypes")
+            HashMap<EncodeHintType, Comparable> hints = new HashMap<>();
+            // 指定字符编码为“utf-8”
+            hints.put(EncodeHintType.CHARACTER_SET, "utf-8");
+            // 指定二维码的纠错等级为中级
+            hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
+            // 设置图片的边距
+            hints.put(EncodeHintType.MARGIN, 2);
+
+            try {
+                QRCodeWriter writer = new QRCodeWriter();
+                BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height, hints);
+
+                BufferedImage bufferedImage = MatrixToImageWriter.toBufferedImage(bitMatrix);
+                ImageIO.write(bufferedImage, "png", os);
+                // 原生转码前面没有 data:image/png;base64 这些字段，返回给前端是无法被解析，可以让前端加，也可以在下面加上
+
+                resultImage = new String("data:image/jpeg;base64," + Base64.getEncoder().encodeToString(os.toByteArray()));
+
+                return resultImage;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (stream != null) {
+                    stream.flush();
+                    stream.close();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 生成带有中间图片的二维码
+     * @param format 格式
+     * @param content 内容
+     * @param width 二维码宽
+     * @param height 二维码高
+     * @param logoUrl 图片地址
+     * @return base64 编码后的字符串
+     */
+    public static String crateQRCodeImg(String format, String content, int width, int height, String logoUrl) throws Exception {
+        Hashtable<EncodeHintType, Object> hints = new Hashtable<>();
+        // 排错率 L<M<Q<H
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+        // 编码
+        hints.put(EncodeHintType.CHARACTER_SET, "utf-8");
+        // 外边距：margin
+        hints.put(EncodeHintType.MARGIN, 1);
+        /*
+         * content : 需要加密的 文字
+         * BarcodeFormat.QR_CODE:要解析的类型（二维码）
+         * hints：加密涉及的一些参数：编码、排错率
+         */
+        BitMatrix bitMatrix = new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, width, height, hints);
+        // 内存中的一张图片：此时需要的图片 是二维码-> 需要一个boolean[][] ->BitMatrix
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                image.setRGB(x, y, (bitMatrix.get(x, y) ? Color.BLACK.getRGB() : Color.WHITE.getRGB()));
+            }
+        }
+        // 画logo
+        image = logoMatrix(image, logoUrl);
+
+        // 将图像转换为 Base64 编码的字符串
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        ImageIO.write(image, format, os);
+        return "data:image/" + format + ";base64," + Base64.getEncoder().encodeToString(os.toByteArray());
+    }
+
+    // 解密：二维码->文字
+    public static void decodeImg(File file) throws Exception {
+        if (!file.exists()) return;
+        // file->内存中的一张图片
+        BufferedImage imge = ImageIO.read(file);
+
+        MultiFormatReader formatReader = new MultiFormatReader();
+        LuminanceSource source = new BufferedImageLuminanceSource(imge);
+        Binarizer binarizer = new HybridBinarizer(source);
+        BinaryBitmap binaryBitmap = new BinaryBitmap(binarizer);
+        // 图片 ->result
+        Map map = new HashMap();
+        map.put(EncodeHintType.CHARACTER_SET, "utf-8");
+        Result result = formatReader.decode(binaryBitmap, map);
+        System.out.println("解析结果：" + result.toString());
+    }
+
+    // 传入logo、二维码 ->带logo的二维码
+    public static BufferedImage logoMatrix(BufferedImage matrixImage, String logoUrl) throws IOException {
+        // 在二维码上画logo:产生一个  二维码画板
+        Graphics2D g2 = matrixImage.createGraphics();
+
+        // 画logo： String->BufferedImage(内存)
+        BufferedImage logoImg = downloadImage(logoUrl);
+        int height = matrixImage.getHeight();
+        int width = matrixImage.getWidth();
+        // 纯logo图片
+        g2.drawImage(logoImg, width * 2 / 5, height * 2 / 5, width * 1 / 5, height * 1 / 5, null);
+
+        // 产生一个 画 白色圆角正方形的 画笔
+        BasicStroke stroke = new BasicStroke(5, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        // 将画板-画笔 关联
+        g2.setStroke(stroke);
+        // 创建一个正方形
+        RoundRectangle2D.Float round = new RoundRectangle2D.Float(width * 2 / 5, height * 2 / 5, width * 1 / 5, height * 1 / 5, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        g2.setColor(Color.WHITE);
+        g2.draw(round);
+
+        // 灰色边框
+        BasicStroke stroke2 = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        g2.setStroke(stroke2);
+        // 创建一个正方形
+        RoundRectangle2D.Float round2 = new RoundRectangle2D.Float(width * 2 / 5 + 2, height * 2 / 5 + 2, width * 1 / 5 - 4, height * 1 / 5 - 4, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        g2.setColor(Color.GRAY);
+        g2.draw(round2);
+
+        g2.dispose();
+        matrixImage.flush();
+
+        return matrixImage;
+    }
+
+    // 从网址下载图片
+    private static BufferedImage downloadImage(String imageUrl) throws IOException {
+        URL url = new URL(imageUrl);
+        InputStream is = url.openStream();
+        BufferedImage image = ImageIO.read(is);
+        is.close();
+        return image;
+    }
+
+
+    /**
      * 获取参数不为空值
-     * 
+     *
      * @param value defaultValue 要判断的value
      * @return value 返回值
      */
-    public static <T> T nvl(T value, T defaultValue)
-    {
+    public static <T> T nvl(T value, T defaultValue) {
         return value != null ? value : defaultValue;
     }
 
     /**
      * * 判断一个Collection是否为空， 包含List，Set，Queue
-     * 
+     *
      * @param coll 要判断的Collection
      * @return true：为空 false：非空
      */
-    public static boolean isEmpty(Collection<?> coll)
-    {
+    public static boolean isEmpty(Collection<?> coll) {
         return isNull(coll) || coll.isEmpty();
     }
 
     /**
      * * 判断一个Collection是否非空，包含List，Set，Queue
-     * 
+     *
      * @param coll 要判断的Collection
      * @return true：非空 false：空
      */
-    public static boolean isNotEmpty(Collection<?> coll)
-    {
+    public static boolean isNotEmpty(Collection<?> coll) {
         return !isEmpty(coll);
     }
 
     /**
      * * 判断一个对象数组是否为空
-     * 
+     *
      * @param objects 要判断的对象数组
-     ** @return true：为空 false：非空
+     *                * @return true：为空 false：非空
      */
-    public static boolean isEmpty(Object[] objects)
-    {
+    public static boolean isEmpty(Object[] objects) {
         return isNull(objects) || (objects.length == 0);
     }
 
     /**
      * * 判断一个对象数组是否非空
-     * 
+     *
      * @param objects 要判断的对象数组
      * @return true：非空 false：空
      */
-    public static boolean isNotEmpty(Object[] objects)
-    {
+    public static boolean isNotEmpty(Object[] objects) {
         return !isEmpty(objects);
     }
 
     /**
      * * 判断一个Map是否为空
-     * 
+     *
      * @param map 要判断的Map
      * @return true：为空 false：非空
      */
-    public static boolean isEmpty(Map<?, ?> map)
-    {
+    public static boolean isEmpty(Map<?, ?> map) {
         return isNull(map) || map.isEmpty();
     }
 
     /**
      * * 判断一个Map是否为空
-     * 
+     *
      * @param map 要判断的Map
      * @return true：非空 false：空
      */
-    public static boolean isNotEmpty(Map<?, ?> map)
-    {
+    public static boolean isNotEmpty(Map<?, ?> map) {
         return !isEmpty(map);
     }
 
     /**
      * * 判断一个字符串是否为空串
-     * 
+     *
      * @param str String
      * @return true：为空 false：非空
      */
-    public static boolean isEmpty(String str)
-    {
+    public static boolean isEmpty(String str) {
         return isNull(str) || NULLSTR.equals(str.trim());
     }
 
     /**
      * * 判断一个字符串是否为非空串
-     * 
+     *
      * @param str String
      * @return true：非空串 false：空串
      */
-    public static boolean isNotEmpty(String str)
-    {
+    public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
     }
 
     /**
      * * 判断一个对象是否为空
-     * 
+     *
      * @param object Object
      * @return true：为空 false：非空
      */
-    public static boolean isNull(Object object)
-    {
+    public static boolean isNull(Object object) {
         return object == null;
     }
 
     /**
      * * 判断一个对象是否非空
-     * 
+     *
      * @param object Object
      * @return true：非空 false：空
      */
-    public static boolean isNotNull(Object object)
-    {
+    public static boolean isNotNull(Object object) {
         return !isNull(object);
     }
 
     /**
      * * 判断一个对象是否是数组类型（Java基本型别的数组）
-     * 
+     *
      * @param object 对象
      * @return true：是数组 false：不是数组
      */
-    public static boolean isArray(Object object)
-    {
+    public static boolean isArray(Object object) {
         return isNotNull(object) && object.getClass().isArray();
     }
 
     /**
      * 去空格
      */
-    public static String trim(String str)
-    {
+    public static String trim(String str) {
         return (str == null ? "" : str.trim());
     }
 
     /**
      * 替换指定字符串的指定区间内字符为"*"
      *
-     * @param str 字符串
+     * @param str          字符串
      * @param startInclude 开始位置（包含）
-     * @param endExclude 结束位置（不包含）
+     * @param endExclude   结束位置（不包含）
      * @return 替换后的字符串
      */
-    public static String hide(CharSequence str, int startInclude, int endExclude)
-    {
-        if (isEmpty(str))
-        {
+    public static String hide(CharSequence str, int startInclude, int endExclude) {
+        if (isEmpty(str)) {
             return NULLSTR;
         }
         final int strLength = str.length();
-        if (startInclude > strLength)
-        {
+        if (startInclude > strLength) {
             return NULLSTR;
         }
-        if (endExclude > strLength)
-        {
+        if (endExclude > strLength) {
             endExclude = strLength;
         }
-        if (startInclude > endExclude)
-        {
+        if (startInclude > endExclude) {
             // 如果起始位置大于结束位置，不替换
             return NULLSTR;
         }
         final char[] chars = new char[strLength];
-        for (int i = 0; i < strLength; i++)
-        {
-            if (i >= startInclude && i < endExclude)
-            {
+        for (int i = 0; i < strLength; i++) {
+            if (i >= startInclude && i < endExclude) {
                 chars[i] = ASTERISK;
-            }
-            else
-            {
+            } else {
                 chars[i] = str.charAt(i);
             }
         }
@@ -223,29 +377,24 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
 
     /**
      * 截取字符串
-     * 
-     * @param str 字符串
+     *
+     * @param str   字符串
      * @param start 开始
      * @return 结果
      */
-    public static String substring(final String str, int start)
-    {
-        if (str == null)
-        {
+    public static String substring(final String str, int start) {
+        if (str == null) {
             return NULLSTR;
         }
 
-        if (start < 0)
-        {
+        if (start < 0) {
             start = str.length() + start;
         }
 
-        if (start < 0)
-        {
+        if (start < 0) {
             start = 0;
         }
-        if (start > str.length())
-        {
+        if (start > str.length()) {
             return NULLSTR;
         }
 
@@ -254,44 +403,36 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
 
     /**
      * 截取字符串
-     * 
-     * @param str 字符串
+     *
+     * @param str   字符串
      * @param start 开始
-     * @param end 结束
+     * @param end   结束
      * @return 结果
      */
-    public static String substring(final String str, int start, int end)
-    {
-        if (str == null)
-        {
+    public static String substring(final String str, int start, int end) {
+        if (str == null) {
             return NULLSTR;
         }
 
-        if (end < 0)
-        {
+        if (end < 0) {
             end = str.length() + end;
         }
-        if (start < 0)
-        {
+        if (start < 0) {
             start = str.length() + start;
         }
 
-        if (end > str.length())
-        {
+        if (end > str.length()) {
             end = str.length();
         }
 
-        if (start > end)
-        {
+        if (start > end) {
             return NULLSTR;
         }
 
-        if (start < 0)
-        {
+        if (start < 0) {
             start = 0;
         }
-        if (end < 0)
-        {
+        if (end < 0) {
             end = 0;
         }
 
@@ -300,22 +441,18 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
 
     /**
      * 判断是否为空，并且不是空白字符
-     * 
+     *
      * @param str 要判断的value
      * @return 结果
      */
-    public static boolean hasText(String str)
-    {
+    public static boolean hasText(String str) {
         return (str != null && !str.isEmpty() && containsText(str));
     }
 
-    private static boolean containsText(CharSequence str)
-    {
+    private static boolean containsText(CharSequence str) {
         int strLen = str.length();
-        for (int i = 0; i < strLen; i++)
-        {
-            if (!Character.isWhitespace(str.charAt(i)))
-            {
+        for (int i = 0; i < strLen; i++) {
+            if (!Character.isWhitespace(str.charAt(i))) {
                 return true;
             }
         }
@@ -330,7 +467,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
      * 通常使用：format("this is {} for {}", "a", "b") -> this is a for b<br>
      * 转义{}： format("this is \\{} for {}", "a", "b") -> this is \{} for a<br>
      * 转义\： format("this is \\\\{} for {}", "a", "b") -> this is \a for b<br>
-     * 
+     *
      * @param template 文本模板，被替换的部分用 {} 表示
      * @param params 参数值
      * @return 格式化后的文本
@@ -346,7 +483,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
 
     /**
      * 是否为http(s)://开头
-     * 
+     *
      * @param link 链接
      * @return 结果
      */
@@ -357,47 +494,40 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
 
     /**
      * 字符串转set
-     * 
+     *
      * @param str 字符串
      * @param sep 分隔符
      * @return set集合
      */
-    public static final Set<String> str2Set(String str, String sep)
-    {
+    public static final Set<String> str2Set(String str, String sep) {
         return new HashSet<String>(str2List(str, sep, true, false));
     }
 
     /**
      * 字符串转list
-     * 
-     * @param str 字符串
-     * @param sep 分隔符
+     *
+     * @param str         字符串
+     * @param sep         分隔符
      * @param filterBlank 过滤纯空白
-     * @param trim 去掉首尾空白
+     * @param trim        去掉首尾空白
      * @return list集合
      */
-    public static final List<String> str2List(String str, String sep, boolean filterBlank, boolean trim)
-    {
+    public static final List<String> str2List(String str, String sep, boolean filterBlank, boolean trim) {
         List<String> list = new ArrayList<String>();
-        if (org.apache.commons.lang3.StringUtils.isEmpty(str))
-        {
+        if (org.apache.commons.lang3.StringUtils.isEmpty(str)) {
             return list;
         }
 
         // 过滤空白字符串
-        if (filterBlank && org.apache.commons.lang3.StringUtils.isBlank(str))
-        {
+        if (filterBlank && org.apache.commons.lang3.StringUtils.isBlank(str)) {
             return list;
         }
         String[] split = str.split(sep);
-        for (String string : split)
-        {
-            if (filterBlank && org.apache.commons.lang3.StringUtils.isBlank(string))
-            {
+        for (String string : split) {
+            if (filterBlank && org.apache.commons.lang3.StringUtils.isBlank(string)) {
                 continue;
             }
-            if (trim)
-            {
+            if (trim) {
                 string = string.trim();
             }
             list.add(string);
@@ -410,21 +540,15 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
      * 判断给定的collection列表中是否包含数组array 判断给定的数组array中是否包含给定的元素value
      *
      * @param collection 给定的集合
-     * @param array 给定的数组
+     * @param array      给定的数组
      * @return boolean 结果
      */
-    public static boolean containsAny(Collection<String> collection, String... array)
-    {
-        if (isEmpty(collection) || isEmpty(array))
-        {
+    public static boolean containsAny(Collection<String> collection, String... array) {
+        if (isEmpty(collection) || isEmpty(array)) {
             return false;
-        }
-        else
-        {
-            for (String str : array)
-            {
-                if (collection.contains(str))
-                {
+        } else {
+            for (String str : array) {
+                if (collection.contains(str)) {
                     return true;
                 }
             }
@@ -435,20 +559,16 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
     /**
      * 查找指定字符串是否包含指定字符串列表中的任意一个字符串同时串忽略大小写
      *
-     * @param cs 指定字符串
+     * @param cs                  指定字符串
      * @param searchCharSequences 需要检查的字符串数组
      * @return 是否包含任意一个字符串
      */
-    public static boolean containsAnyIgnoreCase(CharSequence cs, CharSequence... searchCharSequences)
-    {
-        if (isEmpty(cs) || isEmpty(searchCharSequences))
-        {
+    public static boolean containsAnyIgnoreCase(CharSequence cs, CharSequence... searchCharSequences) {
+        if (isEmpty(cs) || isEmpty(searchCharSequences)) {
             return false;
         }
-        for (CharSequence testStr : searchCharSequences)
-        {
-            if (containsIgnoreCase(cs, testStr))
-            {
+        for (CharSequence testStr : searchCharSequences) {
+            if (containsIgnoreCase(cs, testStr)) {
                 return true;
             }
         }
@@ -458,10 +578,8 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
     /**
      * 驼峰转下划线命名
      */
-    public static String toUnderScoreCase(String str)
-    {
-        if (str == null)
-        {
+    public static String toUnderScoreCase(String str) {
+        if (str == null) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
@@ -471,31 +589,23 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
         boolean curreCharIsUpperCase = true;
         // 下一字符是否大写
         boolean nexteCharIsUpperCase = true;
-        for (int i = 0; i < str.length(); i++)
-        {
+        for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
-            if (i > 0)
-            {
+            if (i > 0) {
                 preCharIsUpperCase = Character.isUpperCase(str.charAt(i - 1));
-            }
-            else
-            {
+            } else {
                 preCharIsUpperCase = false;
             }
 
             curreCharIsUpperCase = Character.isUpperCase(c);
 
-            if (i < (str.length() - 1))
-            {
+            if (i < (str.length() - 1)) {
                 nexteCharIsUpperCase = Character.isUpperCase(str.charAt(i + 1));
             }
 
-            if (preCharIsUpperCase && curreCharIsUpperCase && !nexteCharIsUpperCase)
-            {
+            if (preCharIsUpperCase && curreCharIsUpperCase && !nexteCharIsUpperCase) {
                 sb.append(SEPARATOR);
-            }
-            else if ((i != 0 && !preCharIsUpperCase) && curreCharIsUpperCase)
-            {
+            } else if ((i != 0 && !preCharIsUpperCase) && curreCharIsUpperCase) {
                 sb.append(SEPARATOR);
             }
             sb.append(Character.toLowerCase(c));
@@ -506,19 +616,15 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
 
     /**
      * 是否包含字符串
-     * 
-     * @param str 验证字符串
+     *
+     * @param str  验证字符串
      * @param strs 字符串组
      * @return 包含返回true
      */
-    public static boolean inStringIgnoreCase(String str, String... strs)
-    {
-        if (str != null && strs != null)
-        {
-            for (String s : strs)
-            {
-                if (str.equalsIgnoreCase(trim(s)))
-                {
+    public static boolean inStringIgnoreCase(String str, String... strs) {
+        if (str != null && strs != null) {
+            for (String s : strs) {
+                if (str.equalsIgnoreCase(trim(s))) {
                     return true;
                 }
             }
@@ -528,31 +634,25 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
 
     /**
      * 将下划线大写方式命名的字符串转换为驼峰式。如果转换前的下划线大写方式命名的字符串为空，则返回空字符串。 例如：HELLO_WORLD->HelloWorld
-     * 
+     *
      * @param name 转换前的下划线大写方式命名的字符串
      * @return 转换后的驼峰式命名的字符串
      */
-    public static String convertToCamelCase(String name)
-    {
+    public static String convertToCamelCase(String name) {
         StringBuilder result = new StringBuilder();
         // 快速检查
-        if (name == null || name.isEmpty())
-        {
+        if (name == null || name.isEmpty()) {
             // 没必要转换
             return "";
-        }
-        else if (!name.contains("_"))
-        {
+        } else if (!name.contains("_")) {
             // 不含下划线，仅将首字母大写
             return name.substring(0, 1).toUpperCase() + name.substring(1);
         }
         // 用下划线将原始字符串分割
         String[] camels = name.split("_");
-        for (String camel : camels)
-        {
+        for (String camel : camels) {
             // 跳过原始字符串中开头、结尾的下换线或双重下划线
-            if (camel.isEmpty())
-            {
+            if (camel.isEmpty()) {
                 continue;
             }
             // 首字母大写
@@ -566,34 +666,25 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
      * 驼峰式命名法
      * 例如：user_name->userName
      */
-    public static String toCamelCase(String s)
-    {
-        if (s == null)
-        {
+    public static String toCamelCase(String s) {
+        if (s == null) {
             return null;
         }
-        if (s.indexOf(SEPARATOR) == -1)
-        {
+        if (s.indexOf(SEPARATOR) == -1) {
             return s;
         }
         s = s.toLowerCase();
         StringBuilder sb = new StringBuilder(s.length());
         boolean upperCase = false;
-        for (int i = 0; i < s.length(); i++)
-        {
+        for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
 
-            if (c == SEPARATOR)
-            {
+            if (c == SEPARATOR) {
                 upperCase = true;
-            }
-            else if (upperCase)
-            {
+            } else if (upperCase) {
                 sb.append(Character.toUpperCase(c));
                 upperCase = false;
-            }
-            else
-            {
+            } else {
                 sb.append(c);
             }
         }
@@ -602,21 +693,17 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
 
     /**
      * 查找指定字符串是否匹配指定字符串列表中的任意一个字符串
-     * 
-     * @param str 指定字符串
+     *
+     * @param str  指定字符串
      * @param strs 需要检查的字符串数组
      * @return 是否匹配
      */
-    public static boolean matches(String str, List<String> strs)
-    {
-        if (isEmpty(str) || isEmpty(strs))
-        {
+    public static boolean matches(String str, List<String> strs) {
+        if (isEmpty(str) || isEmpty(strs)) {
             return false;
         }
-        for (String pattern : strs)
-        {
-            if (isMatch(pattern, str))
-            {
+        for (String pattern : strs) {
+            if (isMatch(pattern, str)) {
                 return true;
             }
         }
@@ -624,70 +711,58 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
     }
 
     /**
-     * 判断url是否与规则配置: 
-     * ? 表示单个字符; 
-     * * 表示一层路径内的任意字符串，不可跨层级; 
+     * 判断url是否与规则配置:
+     * ? 表示单个字符;
+     * * 表示一层路径内的任意字符串，不可跨层级;
      * ** 表示任意层路径;
-     * 
+     *
      * @param pattern 匹配规则
-     * @param url 需要匹配的url
+     * @param url     需要匹配的url
      * @return
      */
-    public static boolean isMatch(String pattern, String url)
-    {
+    public static boolean isMatch(String pattern, String url) {
         AntPathMatcher matcher = new AntPathMatcher();
         return matcher.match(pattern, url);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T cast(Object obj)
-    {
+    public static <T> T cast(Object obj) {
         return (T) obj;
     }
 
     /**
      * 数字左边补齐0，使之达到指定长度。注意，如果数字转换为字符串后，长度大于size，则只保留 最后size个字符。
-     * 
-     * @param num 数字对象
+     *
+     * @param num  数字对象
      * @param size 字符串指定长度
      * @return 返回数字的字符串格式，该字符串为指定长度。
      */
-    public static final String padl(final Number num, final int size)
-    {
+    public static final String padl(final Number num, final int size) {
         return padl(num.toString(), size, '0');
     }
 
     /**
      * 字符串左补齐。如果原始字符串s长度大于size，则只保留最后size个字符。
-     * 
-     * @param s 原始字符串
+     *
+     * @param s    原始字符串
      * @param size 字符串指定长度
-     * @param c 用于补齐的字符
+     * @param c    用于补齐的字符
      * @return 返回指定长度的字符串，由原字符串左补齐或截取得到。
      */
-    public static final String padl(final String s, final int size, final char c)
-    {
+    public static final String padl(final String s, final int size, final char c) {
         final StringBuilder sb = new StringBuilder(size);
-        if (s != null)
-        {
+        if (s != null) {
             final int len = s.length();
-            if (s.length() <= size)
-            {
-                for (int i = size - len; i > 0; i--)
-                {
+            if (s.length() <= size) {
+                for (int i = size - len; i > 0; i--) {
                     sb.append(c);
                 }
                 sb.append(s);
-            }
-            else
-            {
+            } else {
                 return s.substring(len - size, len);
             }
-        }
-        else
-        {
-            for (int i = size; i > 0; i--)
-            {
+        } else {
+            for (int i = size; i > 0; i--) {
                 sb.append(c);
             }
         }
