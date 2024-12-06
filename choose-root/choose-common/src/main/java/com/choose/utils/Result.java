@@ -1,6 +1,5 @@
 package com.choose.utils;
 
-
 import com.choose.constant.CommonConstants;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +77,6 @@ public class Result {
                 .setMessage(message)
                 .setSuccess(false);
     }
-
 
     public static Result forward() {
         return new Result().setCode(CommonConstants.ResultCode.FORWARD.code).setMessage(CommonConstants.ResultCode.FORWARD.message).setSuccess(true);
@@ -159,8 +157,12 @@ public class Result {
     }
 
     public Result putData(Object object) {
-        ArrayList<Class<?>> classList = new ArrayList<>();
-        data.putAll(convertObjectToMap(object, classList));
+        if (object instanceof String) {
+            data.put("value", object);
+        } else {
+            ArrayList<Class<?>> classList = new ArrayList<>();
+            data.putAll(convertObjectToMap(object, classList));
+        }
         return this;
     }
 
