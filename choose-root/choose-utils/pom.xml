@@ -53,6 +53,18 @@
             <version>0.4.14</version>
             <scope>compile</scope>
         </dependency>
+
+        <!--Google二维码生成器-->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.4.1</version>
+        </dependency>
     </dependencies>
 
 </project>

@@ -65,12 +65,17 @@
    [DeepSeek 大模型](https://platform.deepseek.com/usage) |
    [微信开发](https://developers.weixin.qq.com/miniprogram/dev/framework/)
 
-## 仓库链接
+## Gitee
 
 - 🌐 **中台仓库**：[中台仓库链接](https://gitee.com/lzt_luo/choose-admin-web)
 - 📱 **微信小程序仓库**：[微信小程序仓库链接](https://gitee.com/lzt_luo/choose-wexinapp)
 - 🖥️ **后端仓库**：[后端仓库链接](https://gitee.com/lzt_luo/choose)
 
+## GitHub
+
+- 🌐 **中台仓库**：[中台仓库链接](https://github.com/spectacleCase/choose-admin-web)
+- 📱 **微信小程序仓库**：[微信小程序仓库链接](https://github.com/spectacleCase/choose-wexinapp)
+- 🖥️ **后端仓库**：[后端仓库链接](https://github.com/spectacleCase/choose)
 ## 🌟
 
 如果你喜欢这个项目，请给这个项目点个 Star 吧！

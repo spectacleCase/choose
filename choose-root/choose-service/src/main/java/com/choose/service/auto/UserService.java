@@ -62,4 +62,9 @@ public interface UserService extends IService<User> {
      * @param fileName - 头像地址
      */
     void updateAvatar(String fileName);
+
+    /**
+     * 用户二维码
+     */
+    String userORCode();
 }
