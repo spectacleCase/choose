@@ -4,10 +4,9 @@ import com.choose.im.dto.FriendDto;
 import com.choose.im.dto.FriendStatusDto;
 import com.choose.im.dto.SelectFriendDto;
 import com.choose.im.dto.getChatListDto;
-import com.choose.im.vo.FriendVo;
-import com.choose.im.vo.SelectFriendVo;
-import com.choose.im.vo.GetChatVo;
+import com.choose.im.vo.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,7 +21,7 @@ public interface FriendService {
     /**
      * 获取添加好友列表
      */
-    List<FriendVo> getFriendList();
+    ArrayList<FriendListVo> getNewFriendList();
 
     /**
      * 修改好友状态
@@ -35,7 +34,17 @@ public interface FriendService {
     List<SelectFriendVo> selectFriend(SelectFriendDto selectFriendDto);
 
     /**
-     * 获取俩天记录
+     * 获取聊天记录
      */
     GetChatVo getChatList(getChatListDto dto);
-} 
+
+    /**
+     * 获取全部好友
+     */
+    List<GetFriendListVo> getFriendList();
+
+    /**
+     * 获取在线聊天的用户
+     */
+    List<GetFVo> getChatUserList();
+}

@@ -1,9 +1,7 @@
 package com.choose.service.im.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
 import com.choose.constant.FileConstant;
@@ -15,23 +13,25 @@ import com.choose.im.dto.SelectFriendDto;
 import com.choose.im.dto.getChatListDto;
 import com.choose.im.pojos.ChatMessage;
 import com.choose.im.pojos.Friend;
-import com.choose.im.vo.FriendVo;
-import com.choose.im.vo.SelectFriendVo;
-import com.choose.im.vo.GetChatVo;
+import com.choose.im.vo.*;
 import com.choose.mapper.ChatMapper;
 import com.choose.mapper.FriendMapper;
 import com.choose.mapper.UserMapper;
 import com.choose.service.im.FriendService;
+import com.choose.string.StringUtils;
 import com.choose.user.pojos.User;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -54,7 +54,8 @@ public class FriendServiceImpl implements FriendService {
 
     @Resource
     private NotificationWebSocketHandlerServer ns;
-    @Autowired
+
+    @Resource
     private ChatMapper chatMapper;
 
 
@@ -81,14 +82,18 @@ public class FriendServiceImpl implements FriendService {
      * 查询添加好友列表
      */
     @Override
-    public List<FriendVo> getFriendList() {
+    public ArrayList<FriendListVo> getNewFriendList() {
+        HashMap<String, List<FriendVo>> stringListHashMap = new HashMap<>();
+        stringListHashMap.put("近三天", new ArrayList<>());
+        stringListHashMap.put("三天前", new ArrayList<>());
+        stringListHashMap.put("一周前", new ArrayList<>());
+
         LambdaQueryWrapper<Friend> friendQueryWrapper = new LambdaQueryWrapper<>();
         friendQueryWrapper.eq(Friend::getUserId, UserLocalThread.getUser().getId());
         List<Friend> friendList = friendMapper.selectList(friendQueryWrapper);
         List<Long> ids = friendList.stream().map(Friend::getFriendId).toList();
         List<User> users = userMapper.selectBatchIds(ids);
         Map<Long, User> collect = users.stream().collect(Collectors.toMap(User::getId, user -> user));
-        ArrayList<FriendVo> friendVos = new ArrayList<>(users.size());
         for (Friend friend : friendList) {
             FriendVo friendVo = new FriendVo();
             friendVo.setId(String.valueOf(friend.getId()));
@@ -96,11 +101,34 @@ public class FriendServiceImpl implements FriendService {
             friendVo.setRemark(friend.getRemark());
             friendVo.setStatus(friend.getStatus());
             friendVo.setFriendName(collect.get(friend.getFriendId()).getNickname());
-            friendVo.setFriendImage(collect.get(friend.getFriendId()).getAvatar());
+            friendVo.setFriendImage(FileConstant.COS_HOST + collect.get(friend.getFriendId()).getAvatar());
             friendVo.setCreateTime(friend.getCreateTime());
-            friendVos.add(friendVo);
+            long currentTime = System.currentTimeMillis();
+            long timeDifference = currentTime - friendVo.getCreateTime().getTime();
+            long threeDays = 3 * 24 * 60 * 60 * 1000;
+            long oneWeek = 7 * 24 * 60 * 60 * 1000;
+            if (timeDifference <= threeDays) {
+                // 近三天
+                stringListHashMap.computeIfAbsent("近三天", k -> new ArrayList<>()).add(friendVo);
+
+            } else if (timeDifference <= oneWeek) {
+                // 三天前
+                stringListHashMap.computeIfAbsent("三天前", k -> new ArrayList<>()).add(friendVo);
+
+            } else {
+                // 一周前
+                stringListHashMap.computeIfAbsent("一周前", k -> new ArrayList<>()).add(friendVo);
+            }
         }
-        return friendVos;
+        ArrayList<FriendListVo> friendListVos = new ArrayList<>();
+        stringListHashMap.keySet().forEach(key -> {
+            List<FriendVo> friendVoList = stringListHashMap.get(key);
+            FriendListVo friendListVo = new FriendListVo();
+            friendListVo.setFriends(friendVoList);
+            friendListVo.setTitle(key);
+            friendListVos.add(friendListVo);
+        });
+        return friendListVos;
     }
 
     /**
@@ -206,4 +234,121 @@ public class FriendServiceImpl implements FriendService {
         return getChatVo;
     }
 
+    /**
+     * 获取全部好友
+     */
+    @Override
+    public List<GetFriendListVo> getFriendList() {
+        HashMap<String, List<GetFVo>> stringListHashMap = new HashMap<>();
+        ArrayList<GetFriendListVo> getFriendListVos = new ArrayList<>();
+        LambdaQueryWrapper<Friend> fw = new LambdaQueryWrapper<>();
+        fw.and(w -> w.eq(Friend::getFriendId, UserLocalThread.getUser().getId())
+                        .or()
+                        .eq(Friend::getUserId, UserLocalThread.getUser().getId())
+                ).eq(Friend::getStatus, 1);
+        List<Friend> r = friendMapper.selectList(fw);
+        List<Long> ids = new ArrayList<>();
+        r.forEach(f -> {
+            if(String.valueOf(f.getFriendId()).equals(UserLocalThread.getUser().getId())) {
+                ids.add(f.getFriendId());
+            } else {
+                ids.add(f.getUserId());
+            }
+        });
+        if(ids.isEmpty()) {
+           return List.of();
+        }
+        List<User> users = userMapper.selectBatchIds(ids);
+        users.forEach(u -> {
+            String s = StringUtils.capitalizeFirstLetterOfPinyin(u.getNickname());
+            if (!stringListHashMap.containsKey(s)) {
+                stringListHashMap.putIfAbsent(s, new ArrayList<>());
+            }
+            GetFVo get = new GetFVo();
+            get.setAvatar(FileConstant.COS_HOST + u.getAvatar());
+            get.setUsername(u.getNickname());
+            get.setId(String.valueOf(u.getId()));
+            stringListHashMap.get(s).add(get);
+        });
+        stringListHashMap.keySet().forEach(s -> {
+            GetFriendListVo getFriendListVo = new GetFriendListVo();
+            getFriendListVo.setLetter(s);
+            getFriendListVo.setContacts(stringListHashMap.get(s));
+            getFriendListVos.add(getFriendListVo);
+        });
+        return getFriendListVos;
+    }
+
+    /**
+     * 获取在线聊天的用户
+     */
+    @Override
+    public List<GetFVo> getChatUserList() {
+        LambdaQueryWrapper<Friend> fw = new LambdaQueryWrapper<>();
+        fw.and(w -> w.eq(Friend::getFriendId, UserLocalThread.getUser().getId())
+                .or()
+                .eq(Friend::getUserId, UserLocalThread.getUser().getId())
+        ).eq(Friend::getStatus, 1);
+        List<Friend> r = friendMapper.selectList(fw);
+        List<Long> ids = new ArrayList<>();
+        r.forEach(f -> {
+            if(String.valueOf(f.getFriendId()).equals(UserLocalThread.getUser().getId())) {
+                ids.add(f.getUserId());
+            } else {
+                ids.add(f.getFriendId());
+            }
+        });
+        if(ids.isEmpty()) {
+            return List.of();
+        }
+        List<User> users = userMapper.selectBatchIds(ids);
+        ArrayList<GetFVo> getChatVos = new ArrayList<>();
+        List<ChatMessage> chatMessages = chatMapper.selectList(new LambdaQueryWrapper<ChatMessage>()
+                .eq(ChatMessage::getSender, UserLocalThread.getUser().getId())
+                .orderByDesc(ChatMessage::getCreateTime));
+        Map<Long, List<ChatMessage>> collect = chatMessages.stream().collect(Collectors.groupingBy(ChatMessage::getReceiver));
+        users.forEach(u -> {
+            GetFVo getFVo = new GetFVo();
+            getFVo.setId(String.valueOf(u.getId()));
+            getFVo.setUsername(u.getNickname());
+            getFVo.setAvatar(FileConstant.COS_HOST + u.getAvatar());
+            List<ChatMessage> chatMessages1 = collect.get(u.getId());
+            getFVo.setCreateTime(formatCreateTime(String.valueOf(chatMessages1.get(0).getCreateTime())));
+            getFVo.setChat(chatMessages1.get(0).getContent());
+            getChatVos.add(getFVo);
+        });
+        return getChatVos;
+
+
+
+    }
+
+    public static String formatCreateTime(String createTimeStr) {
+        // 解析时间字符串
+        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
+        ZonedDateTime createTime = ZonedDateTime.parse(createTimeStr, inputFormatter);
+
+        // 获取当前时间
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
+
+        // 计算时间差
+        long days = java.time.temporal.ChronoUnit.DAYS.between(createTime.toLocalDate(), now.toLocalDate());
+
+        // 格式化时间
+        if (days == 0) {
+            // 今天
+            DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("HH:mm");
+            return createTime.format(outputFormatter);
+        } else if (days == 1) {
+            // 昨天
+            return "昨天";
+        } else if (days > 1 && days <= 7) {
+            // 一周内
+            return createTime.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.getDefault());
+        } else {
+            // 一周外
+            DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            return createTime.format(outputFormatter);
+        }
+    }
 }
