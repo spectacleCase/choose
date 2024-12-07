@@ -328,7 +328,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = userMapper.selectById(id);
         String code  = "";
         try {
-            code = StringUtils.crateQRCodeImg("png",id, 300, 300,FileConstant.COS_HOST + user.getAvatar());
+            code = StringUtils.crateQRCodeImg("png",id, 400, 400,FileConstant.COS_HOST + user.getAvatar());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

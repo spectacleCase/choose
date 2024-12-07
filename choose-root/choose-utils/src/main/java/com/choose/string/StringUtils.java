@@ -3,6 +3,10 @@ package com.choose.string;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
+import net.sourceforge.pinyin4j.PinyinHelper;
+import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
+import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
+import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
 import org.springframework.util.AntPathMatcher;
 
 import java.awt.*;
@@ -214,6 +218,40 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     }
 
 
+    /**
+     * 将中文用户名的拼音首字母大写
+     *
+     * @param chineseName 中文用户名
+     * @return 拼音首字母大写的用户名
+     */
+    public static String capitalizeFirstLetterOfPinyin(String chineseName) {
+        if (chineseName == null || chineseName.isEmpty()) {
+            return chineseName;
+        }
+
+        // 创建拼音输出格式
+        HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
+        // 设置为大写
+        format.setCaseType(HanyuPinyinCaseType.UPPERCASE);
+        // 不带声调
+        format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+
+        try {
+            // 获取首字母的拼音
+            char firstChar = chineseName.charAt(0);
+            String[] pinyinArray = PinyinHelper.toHanyuPinyinStringArray(firstChar, format);
+
+            if (pinyinArray != null && pinyinArray.length > 0) {
+                // 返回首字母的拼音
+                return pinyinArray[0].substring(0, 1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // 如果转换失败，返回原字符串
+        return chineseName;
+    }
     /**
      * 获取参数不为空值
      *

@@ -18,7 +18,6 @@ public class FriendVo {
 
     private String id;
 
-
     /**
      * 好友ID，表示被添加为好友的用户
      */
