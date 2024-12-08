@@ -16,7 +16,7 @@ public class ImMessage {
     /**
      * 信息类型
      */
-    private String type;
+    private int type;
 
     /**
      * 发送方
