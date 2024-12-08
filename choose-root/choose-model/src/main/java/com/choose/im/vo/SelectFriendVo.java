@@ -26,5 +26,5 @@ public class SelectFriendVo {
 
     private String description;
 
-    private int status;
+    private Integer status;
 }

@@ -17,7 +17,7 @@ import java.util.List;
 @Data
 public class GetChatVo {
 
-    private List<ChatMessage> chatList;
+    private List<ChatMessageVo> chatList;
 
     private String avatar;
 
