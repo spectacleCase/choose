@@ -2,6 +2,7 @@ package com.choose.service.im.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
 import com.choose.constant.FileConstant;
@@ -194,11 +195,10 @@ public class FriendServiceImpl implements FriendService {
 
         // 设置查询条件：发送方或接收方为当前用户或目标用户
         wrapper.and(w -> w.eq(ChatMessage::getSender, dto.getId())
-                        .eq(ChatMessage::getReceiver, UserLocalThread.getUser().getId())
-                        .or()
-                        .eq(ChatMessage::getSender, UserLocalThread.getUser().getId())
-                        .eq(ChatMessage::getReceiver, dto.getId()))
-                .orderByDesc(ChatMessage::getCreateTime);
+                .eq(ChatMessage::getReceiver, UserLocalThread.getUser().getId())
+                .or()
+                .eq(ChatMessage::getSender, UserLocalThread.getUser().getId())
+                .eq(ChatMessage::getReceiver, dto.getId()));
 
         // 如果是第一次查询，获取最近一周的聊天记录
         if (dto.getLastCreateTime() == null) {
@@ -213,6 +213,15 @@ public class FriendServiceImpl implements FriendService {
 
         // 执行查询
         List<ChatMessage> chatMessages = chatMapper.selectList(wrapper);
+        ArrayList<ChatMessageVo> chatMessageVos = new ArrayList<>();
+        for (ChatMessage chatMessage : chatMessages) {
+            ChatMessageVo chatMessageVo = new ChatMessageVo();
+            BeanUtils.copyProperties(chatMessage, chatMessageVo);
+            chatMessageVo.setId(String.valueOf(chatMessage.getId()));
+            chatMessageVo.setSender(String.valueOf(chatMessage.getSender()));
+            chatMessageVo.setReceiver(String.valueOf(chatMessage.getReceiver()));
+            chatMessageVos.add(chatMessageVo);
+        }
 
         // 查询用户信息
         LambdaQueryWrapper<User> ulw = new LambdaQueryWrapper<>();
@@ -230,7 +239,7 @@ public class FriendServiceImpl implements FriendService {
                 getChatVo.setNickname(user.getNickname());
             }
         }
-        getChatVo.setChatList(chatMessages);
+        getChatVo.setChatList(chatMessageVos);
         return getChatVo;
     }
 
@@ -243,20 +252,20 @@ public class FriendServiceImpl implements FriendService {
         ArrayList<GetFriendListVo> getFriendListVos = new ArrayList<>();
         LambdaQueryWrapper<Friend> fw = new LambdaQueryWrapper<>();
         fw.and(w -> w.eq(Friend::getFriendId, UserLocalThread.getUser().getId())
-                        .or()
-                        .eq(Friend::getUserId, UserLocalThread.getUser().getId())
-                ).eq(Friend::getStatus, 1);
+                .or()
+                .eq(Friend::getUserId, UserLocalThread.getUser().getId())
+        ).eq(Friend::getStatus, 1);
         List<Friend> r = friendMapper.selectList(fw);
         List<Long> ids = new ArrayList<>();
         r.forEach(f -> {
-            if(String.valueOf(f.getFriendId()).equals(UserLocalThread.getUser().getId())) {
+            if (String.valueOf(f.getFriendId()).equals(UserLocalThread.getUser().getId())) {
                 ids.add(f.getFriendId());
             } else {
                 ids.add(f.getUserId());
             }
         });
-        if(ids.isEmpty()) {
-           return List.of();
+        if (ids.isEmpty()) {
+            return List.of();
         }
         List<User> users = userMapper.selectBatchIds(ids);
         users.forEach(u -> {
@@ -292,33 +301,40 @@ public class FriendServiceImpl implements FriendService {
         List<Friend> r = friendMapper.selectList(fw);
         List<Long> ids = new ArrayList<>();
         r.forEach(f -> {
-            if(String.valueOf(f.getFriendId()).equals(UserLocalThread.getUser().getId())) {
+            if (String.valueOf(f.getFriendId()).equals(UserLocalThread.getUser().getId())) {
                 ids.add(f.getUserId());
             } else {
                 ids.add(f.getFriendId());
             }
         });
-        if(ids.isEmpty()) {
+        if (ids.isEmpty()) {
             return List.of();
         }
         List<User> users = userMapper.selectBatchIds(ids);
         ArrayList<GetFVo> getChatVos = new ArrayList<>();
-        List<ChatMessage> chatMessages = chatMapper.selectList(new LambdaQueryWrapper<ChatMessage>()
-                .eq(ChatMessage::getSender, UserLocalThread.getUser().getId())
-                .orderByDesc(ChatMessage::getCreateTime));
-        Map<Long, List<ChatMessage>> collect = chatMessages.stream().collect(Collectors.groupingBy(ChatMessage::getReceiver));
+        List<ChatMessage> chatMessages = chatMapper.selectPage(
+                new Page<>(1, 5),
+                new LambdaQueryWrapper<ChatMessage>()
+                        .eq(ChatMessage::getSender, UserLocalThread.getUser().getId())
+                        .or().eq(ChatMessage::getReceiver, UserLocalThread.getUser().getId())
+                        .orderByDesc(ChatMessage::getCreateTime)
+        ).getRecords();
+
+        Map<Long, List<ChatMessage>> collect = chatMessages.stream()
+                .collect(Collectors.groupingBy(ChatMessage::getReceiver));
         users.forEach(u -> {
             GetFVo getFVo = new GetFVo();
             getFVo.setId(String.valueOf(u.getId()));
             getFVo.setUsername(u.getNickname());
             getFVo.setAvatar(FileConstant.COS_HOST + u.getAvatar());
-            List<ChatMessage> chatMessages1 = collect.get(u.getId());
-            getFVo.setCreateTime(formatCreateTime(String.valueOf(chatMessages1.get(0).getCreateTime())));
-            getFVo.setChat(chatMessages1.get(0).getContent());
+            // List<ChatMessage> chatMessages1 = collect.get(u.getId());
+            // getFVo.setCreateTime(formatCreateTime(String.valueOf(chatMessages1.get(0).getCreateTime())));
+            getFVo.setCreateTime(formatCreateTime(String.valueOf(chatMessages.get(0).getCreateTime())));
+            // getFVo.setChat(chatMessages1.get(0).getContent());
+            getFVo.setChat(chatMessages.get(0).getContent());
             getChatVos.add(getFVo);
         });
         return getChatVos;
-
 
 
     }
