@@ -62,7 +62,8 @@ public class NotificationWebSocketHandlerServer extends TextWebSocketHandler {
             chatMessage.setContent(parsedMessage.getContent());
             chatMessage.setSender(Long.valueOf(parsedMessage.getSender()));
             chatMessage.setReceiver(Long.valueOf(parsedMessage.getReceiver()));
-            chatMessage.setType(ChatEnum.getCode(parsedMessage.getType()));
+            // chatMessage.setType(ChatEnum.getCode(parsedMessage.getType()));
+            chatMessage.setType(parsedMessage.getType());
 
             chatMapper.insert(chatMessage);
             if (receiverSession != null && receiverSession.isOpen()) {
