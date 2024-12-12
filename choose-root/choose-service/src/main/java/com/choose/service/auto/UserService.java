@@ -40,7 +40,7 @@ public interface UserService extends IService<User> {
     /**
      * 获取用户信息
      */
-    UserInfo getUser();
+    UserInfo getUser(String id);
 
     /**
      * 修改用户信息

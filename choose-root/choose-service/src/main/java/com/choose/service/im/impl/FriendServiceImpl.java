@@ -68,12 +68,16 @@ public class FriendServiceImpl implements FriendService {
         friend.setRemark(friendDto.remark());
         friend.setStatus(CommonConstants.ChatFiend.ToBeConfirmed);
         LambdaQueryWrapper<Friend> friendQueryWrapper = new LambdaQueryWrapper<>();
-        friendQueryWrapper.eq(Friend::getUserId, UserLocalThread.getUser().getId());
-        friendQueryWrapper.eq(Friend::getFriendId, friendDto.friendId());
+        friendQueryWrapper.eq(Friend::getUserId, UserLocalThread.getUser().getId())
+                .eq(Friend::getFriendId, friendDto.friendId())
+                .or()
+                .eq(Friend::getFriendId, UserLocalThread.getUser().getId())
+                .eq(Friend::getUserId, friendDto.friendId());
         friendQueryWrapper.in(Friend::getStatus, CommonConstants.ChatFiend.agree, CommonConstants.ChatFiend.ToBeConfirmed);
         List<Friend> friendList = friendMapper.selectList(friendQueryWrapper);
         if (!friendList.isEmpty()) {
-            throw new CustomException(AppHttpCodeEnum.DATA_EXIST);
+            return;
+            // throw new CustomException(AppHttpCodeEnum.DATA_EXIST);
         }
         friendMapper.insert(friend);
         ns.sendComment(Long.valueOf(friendDto.friendId()), "您有一条好友请求：（备注）" + friendDto.remark());
@@ -90,9 +94,9 @@ public class FriendServiceImpl implements FriendService {
         stringListHashMap.put("一周前", new ArrayList<>());
 
         LambdaQueryWrapper<Friend> friendQueryWrapper = new LambdaQueryWrapper<>();
-        friendQueryWrapper.eq(Friend::getUserId, UserLocalThread.getUser().getId());
+        friendQueryWrapper.eq(Friend::getFriendId, UserLocalThread.getUser().getId());
         List<Friend> friendList = friendMapper.selectList(friendQueryWrapper);
-        List<Long> ids = friendList.stream().map(Friend::getFriendId).toList();
+        List<Long> ids = friendList.stream().map(Friend::getUserId).toList();
         List<User> users = userMapper.selectBatchIds(ids);
         Map<Long, User> collect = users.stream().collect(Collectors.toMap(User::getId, user -> user));
         for (Friend friend : friendList) {
@@ -101,8 +105,8 @@ public class FriendServiceImpl implements FriendService {
             friendVo.setFriendId(String.valueOf(friend.getFriendId()));
             friendVo.setRemark(friend.getRemark());
             friendVo.setStatus(friend.getStatus());
-            friendVo.setFriendName(collect.get(friend.getFriendId()).getNickname());
-            friendVo.setFriendImage(FileConstant.COS_HOST + collect.get(friend.getFriendId()).getAvatar());
+            friendVo.setFriendName(collect.get(friend.getUserId()).getNickname());
+            friendVo.setFriendImage(FileConstant.COS_HOST + collect.get(friend.getUserId()).getAvatar());
             friendVo.setCreateTime(friend.getCreateTime());
             long currentTime = System.currentTimeMillis();
             long timeDifference = currentTime - friendVo.getCreateTime().getTime();
@@ -190,6 +194,8 @@ public class FriendServiceImpl implements FriendService {
      */
     @Override
     public GetChatVo getChatList(getChatListDto dto) {
+        readMessage(dto);
+
         GetChatVo getChatVo = new GetChatVo();
         LambdaQueryWrapper<ChatMessage> wrapper = Wrappers.lambdaQuery();
 
@@ -243,6 +249,14 @@ public class FriendServiceImpl implements FriendService {
         return getChatVo;
     }
 
+    @Override
+    public void readMessage(getChatListDto dto) {
+        ChatMessage chatMessage1 = new ChatMessage();
+        chatMessage1.setIsRead(1);
+        chatMapper.update(chatMessage1, new LambdaQueryWrapper<ChatMessage>().eq(ChatMessage::getSender, dto.getId())
+                .eq(ChatMessage::getReceiver, UserLocalThread.getUser().getId()));
+    }
+
     /**
      * 获取全部好友
      */
@@ -259,9 +273,9 @@ public class FriendServiceImpl implements FriendService {
         List<Long> ids = new ArrayList<>();
         r.forEach(f -> {
             if (String.valueOf(f.getFriendId()).equals(UserLocalThread.getUser().getId())) {
-                ids.add(f.getFriendId());
-            } else {
                 ids.add(f.getUserId());
+            } else {
+                ids.add(f.getFriendId());
             }
         });
         if (ids.isEmpty()) {
@@ -311,27 +325,58 @@ public class FriendServiceImpl implements FriendService {
             return List.of();
         }
         List<User> users = userMapper.selectBatchIds(ids);
-        ArrayList<GetFVo> getChatVos = new ArrayList<>();
-        List<ChatMessage> chatMessages = chatMapper.selectPage(
-                new Page<>(1, 5),
-                new LambdaQueryWrapper<ChatMessage>()
-                        .eq(ChatMessage::getSender, UserLocalThread.getUser().getId())
-                        .or().eq(ChatMessage::getReceiver, UserLocalThread.getUser().getId())
-                        .orderByDesc(ChatMessage::getCreateTime)
-        ).getRecords();
+        LambdaQueryWrapper<ChatMessage> notReadCountListQ = new LambdaQueryWrapper<>();
+        notReadCountListQ.eq(ChatMessage::getReceiver, UserLocalThread.getUser().getId())
+                .eq(ChatMessage::getIsRead, 0);
 
+        List<ChatMessage> notReadCountList = chatMapper.selectList(notReadCountListQ);
+
+        Map<Long, Long> notReadCountMap = notReadCountList.stream()
+                .collect(Collectors.groupingBy(ChatMessage::getSender, Collectors.counting()));
+        ArrayList<GetFVo> getChatVos = new ArrayList<>();
+        List<ChatMessage> chatMessages = chatMapper.getChatUserList(UserLocalThread.getUser().getId());
+
+        // 按用户 ID 分组聊天记录
         Map<Long, List<ChatMessage>> collect = chatMessages.stream()
                 .collect(Collectors.groupingBy(ChatMessage::getReceiver));
+        Map<Long, List<ChatMessage>> collect1 = chatMessages.stream().collect(Collectors.groupingBy(ChatMessage::getSender));
+
+
         users.forEach(u -> {
             GetFVo getFVo = new GetFVo();
             getFVo.setId(String.valueOf(u.getId()));
             getFVo.setUsername(u.getNickname());
             getFVo.setAvatar(FileConstant.COS_HOST + u.getAvatar());
-            // List<ChatMessage> chatMessages1 = collect.get(u.getId());
-            // getFVo.setCreateTime(formatCreateTime(String.valueOf(chatMessages1.get(0).getCreateTime())));
-            getFVo.setCreateTime(formatCreateTime(String.valueOf(chatMessages.get(0).getCreateTime())));
-            // getFVo.setChat(chatMessages1.get(0).getContent());
-            getFVo.setChat(chatMessages.get(0).getContent());
+            getFVo.setNotReadCount(notReadCountMap.get(u.getId()) != null ? notReadCountMap.get(u.getId()) : 0L);
+
+            // 获取对应用户的最新一条聊天记录
+            List<ChatMessage> userChatMessages = collect.getOrDefault(u.getId(), Collections.emptyList());
+            List<ChatMessage> userChatMessages1 = collect1.getOrDefault(u.getId(), Collections.emptyList());
+            if (!userChatMessages.isEmpty() && !userChatMessages1.isEmpty()) {
+                ChatMessage chatMessage = userChatMessages.get(0);
+                ChatMessage chatMessage1 = userChatMessages1.get(0);
+                if (chatMessage1.getCreateTime().getTime() > chatMessage.getCreateTime().getTime()) {
+                    getFVo.setCreateTime(formatCreateTime(String.valueOf(chatMessage1.getCreateTime())));
+                    getFVo.setChat(chatMessage1.getContent());
+                } else {
+                    getFVo.setCreateTime(formatCreateTime(String.valueOf(chatMessage.getCreateTime())));
+                    getFVo.setChat(chatMessage.getContent());
+                }
+            } else if (!userChatMessages.isEmpty()) {
+                ChatMessage latestMessage = userChatMessages.get(0);
+                getFVo.setCreateTime(formatCreateTime(String.valueOf(latestMessage.getCreateTime())));
+                getFVo.setChat(latestMessage.getContent());
+            } else if (!userChatMessages1.isEmpty()) {
+                ChatMessage latestMessage = userChatMessages1.get(0);
+                getFVo.setCreateTime(formatCreateTime(String.valueOf(latestMessage.getCreateTime())));
+                getFVo.setChat(latestMessage.getContent());
+            } else {
+                // 如果没有聊天记录，可以设置默认值或不设置
+
+                getFVo.setCreateTime("");
+                getFVo.setChat("");
+            }
+
             getChatVos.add(getFVo);
         });
         return getChatVos;

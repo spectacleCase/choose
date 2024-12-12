@@ -62,6 +62,12 @@ public class ChatController {
         return Result.ok(friendService.getChatList(dto));
     }
 
+    @PostMapping("/v1/readMessage")
+    public Result readMessage(@RequestBody getChatListDto dto) {
+        friendService.readMessage(dto);
+        return Result.ok();
+    }
+
     @PostMapping("/v1/getChatUserList")
     public Result getChatUserList() {
         return Result.ok(friendService.getChatUserList());

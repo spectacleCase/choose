@@ -39,6 +39,11 @@ public interface FriendService {
     GetChatVo getChatList(getChatListDto dto);
 
     /**
+     * 已读全部信息
+     */
+    void readMessage(getChatListDto dto);
+
+    /**
      * 获取全部好友
      */
     List<GetFriendListVo> getFriendList();
