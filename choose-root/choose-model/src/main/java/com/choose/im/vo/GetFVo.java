@@ -25,4 +25,6 @@ public class GetFVo {
     private String chat;
 
     private String createTime;
+
+    private Long notReadCount;
 }

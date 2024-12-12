@@ -165,6 +165,8 @@ public class DishesServiceImpl extends ServiceImpl<DishesMapper, Dishes> impleme
         BeanUtils.copyProperties(dto, shops);
         shops.setIsAudit(AuditEnum.UN_AUDIT.getCode());
         shops.setMark("");
+        String[] r = shops.getCoordinate().split(",");
+        shops.setCoordinate(r[1] + "," + r[0]);
         shopsMapper.insert(shops);
     }
 

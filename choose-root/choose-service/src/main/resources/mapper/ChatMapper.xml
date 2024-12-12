@@ -3,16 +3,8 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.choose.mapper.UserMapper">
-    <select id="getMonthUsers" resultType="java.util.Map">
-        SELECT
-            DATE_FORMAT(create_time, '%Y-%m') AS month,
-            COUNT(*) AS total_users,
-            SUM(CASE WHEN create_time = LAST_DAY(create_time) THEN 1 ELSE 0 END) AS new_users
-        FROM choose_user
-        GROUP BY DATE_FORMAT(create_time, '%Y-%m')
-        ORDER BY month
-    </select>
+<mapper namespace="com.choose.mapper.ChatMapper">
+
     <select id="getChatUserList" resultType="com.choose.im.pojos.ChatMessage">
         select *
         from choose_chat
