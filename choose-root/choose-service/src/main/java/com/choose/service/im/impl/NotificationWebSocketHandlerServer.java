@@ -54,8 +54,12 @@ public class NotificationWebSocketHandlerServer extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(@NotNull WebSocketSession session, @NotNull TextMessage message) {
         System.out.println("Message received: " + message.getPayload());
+        String a = "{\"messageType\":\"heartbeat\"}";
         try {
-            ImMessage parsedMessage = new Gson().fromJson(message.getPayload(), ImMessage.class);
+            if (a.equals(message.getPayload())) {
+                return;
+            }
+                ImMessage parsedMessage = new Gson().fromJson(message.getPayload(), ImMessage.class);
             WebSocketSession receiverSession = USER_SESSIONS.get(Long.valueOf(parsedMessage.getReceiver()));
             // 如果接收者的会话存在且处于打开状态，则发送消息
             ChatMessage chatMessage = new ChatMessage();
@@ -68,7 +72,7 @@ public class NotificationWebSocketHandlerServer extends TextWebSocketHandler {
             // if (receiverSession != null && receiverSession.isOpen()) {
             //     chatMessage.setIsRead(1);
             // } else {
-                chatMessage.setIsRead(0);
+            chatMessage.setIsRead(0);
             // }
             chatMapper.insert(chatMessage);
             if (receiverSession != null && receiverSession.isOpen()) {

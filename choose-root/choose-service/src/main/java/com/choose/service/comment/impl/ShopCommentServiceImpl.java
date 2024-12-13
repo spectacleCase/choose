@@ -99,8 +99,9 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
             commentNotifications.setMessage(dto.content());
             commentNotifications.setIsRead(CommentEnum.UNREAD.getCode());
             commentNotificationsMapper.insert(commentNotifications);
+            String message = "{\"messageType\":\"notify\",\"content\":\"" + dto.content() + "\"}";
             if (result) {
-                notificationWebSocketHandlerServer.sendComment(Long.valueOf(dto.senderId()), dto.content());
+                notificationWebSocketHandlerServer.sendComment(Long.valueOf(dto.senderId()), message);
             }
 
             return;
