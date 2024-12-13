@@ -13,6 +13,12 @@ import lombok.Data;
  */
 @Data
 public class ImMessage {
+
+    /**
+     * websocket消息类型
+     */
+    private String messageType;
+
     /**
      * 信息类型
      */
@@ -37,4 +43,6 @@ public class ImMessage {
      *  发送时间
      */
     private String createTime;
+
+    private String avatar;
 }
