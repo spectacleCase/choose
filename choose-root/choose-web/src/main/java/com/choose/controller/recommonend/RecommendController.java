@@ -1,6 +1,6 @@
 package com.choose.controller.recommonend;
 
-import com.choose.common.CommentPageDto;
+import com.choose.common.dto.CommentPageDto;
 import com.choose.recommoend.dto.RecommendDto;
 import com.choose.recommoend.vo.RecommendListVo;
 import com.choose.service.recommend.RecommendService;

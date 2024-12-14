@@ -6,7 +6,7 @@ import com.choose.comment.dto.ShopCommentDetailDto;
 import com.choose.comment.dto.ShopCommentDto;
 import com.choose.comment.pojos.ShopComment;
 import com.choose.comment.vo.*;
-import com.choose.common.CommentPageDto;
+import com.choose.common.dto.CommentPageDto;
 
 import java.util.List;
 

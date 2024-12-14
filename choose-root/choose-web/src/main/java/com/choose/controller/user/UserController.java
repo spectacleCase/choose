@@ -68,8 +68,8 @@ public class UserController {
     }
 
     @PostMapping("/v1/getUser")
-    public Result getUser() {
-        UserInfo user = userService.getUser();
+    public Result getUser(String id) {
+        UserInfo user = userService.getUser(id);
         return Result.ok(user);
     }
 

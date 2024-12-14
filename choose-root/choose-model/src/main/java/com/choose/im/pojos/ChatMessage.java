@@ -43,5 +43,10 @@ public class ChatMessage extends BasePo {
      * 信息内容
      */
     private String content;
+
+    /**
+     * 是否已读：1读，0未读
+     */
+    private Integer isRead;
 }
 
