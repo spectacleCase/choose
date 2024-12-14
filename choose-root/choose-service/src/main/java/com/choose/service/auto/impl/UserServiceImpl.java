@@ -12,6 +12,7 @@ import com.choose.constant.CommonConstants;
 import com.choose.constant.FileConstant;
 import com.choose.enums.AppHttpCodeEnum;
 import com.choose.exception.CustomException;
+import com.choose.josn.JsonUtil;
 import com.choose.jwt.JWTUtils;
 import com.choose.mapper.UserMapper;
 import com.choose.redis.utils.RedisUtils;
@@ -184,13 +185,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     @SysLog("获取用户信息")
-    public UserInfo getUser() {
-        UserInfo user = UserLocalThread.getUser();
+    public UserInfo getUser(String id) {
+        if (id == null || id.isEmpty()) {
+            UserInfo user = UserLocalThread.getUser();
+            if (Objects.nonNull(user)) {
+                // UserVo userVo = new UserVo();
+                // BeanUtils.copyProperties(user, userVo);
+                user.setAvatar(FileConstant.COS_HOST + user.getAvatar());
+                return user;
+            }
+        }
+        User user = userMapper.selectById(id);
         if (Objects.nonNull(user)) {
-            // UserVo userVo = new UserVo();
-            // BeanUtils.copyProperties(user, userVo);
-            user.setAvatar(FileConstant.COS_HOST + user.getAvatar());
-            return user;
+            UserInfo userInfo = new UserInfo();
+            BeanUtils.copyProperties(user, userInfo);
+            userInfo.setAvatar(FileConstant.COS_HOST + user.getAvatar());
+            userInfo.setId(String.valueOf(user.getId()));
+            return userInfo;
         }
         throw new RuntimeException("未登录");
     }
@@ -311,7 +322,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserInfo userInfo = UserLocalThread.getUser();
         User user = new User();
         if (Objects.nonNull(userInfo) && !fileName.isEmpty()) {
-            BeanUtils.copyProperties(userInfo,user);
+            BeanUtils.copyProperties(userInfo, user);
             user.setAvatar(fileName);
             userMapper.updateById(user);
             return;
@@ -325,10 +336,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public String userORCode() {
         String id = UserLocalThread.getUser().getId();
+        HashMap<String, String> stringStringHashMap = new HashMap<>();
+        stringStringHashMap.put("id", id);
+        stringStringHashMap.put("type", "addFriend");
+        String json = JsonUtil.toJson(stringStringHashMap);
         User user = userMapper.selectById(id);
-        String code  = "";
+        String code = "";
         try {
-            code = StringUtils.crateQRCodeImg("png",id, 400, 400,FileConstant.COS_HOST + user.getAvatar());
+            code = StringUtils.crateQRCodeImg("png", json, 400, 400, FileConstant.COS_HOST + user.getAvatar());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -8,7 +8,7 @@ import com.choose.comment.dto.ShopCommentDto;
 import com.choose.comment.pojos.CommentNotifications;
 import com.choose.comment.pojos.ShopComment;
 import com.choose.comment.vo.*;
-import com.choose.common.CommentPageDto;
+import com.choose.common.dto.CommentPageDto;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
 import com.choose.constant.FileConstant;
@@ -99,8 +99,9 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
             commentNotifications.setMessage(dto.content());
             commentNotifications.setIsRead(CommentEnum.UNREAD.getCode());
             commentNotificationsMapper.insert(commentNotifications);
+            String message = "{\"messageType\":\"notify\",\"content\":\"" + dto.content() + "\"}";
             if (result) {
-                notificationWebSocketHandlerServer.sendComment(Long.valueOf(dto.senderId()), dto.content());
+                notificationWebSocketHandlerServer.sendComment(Long.valueOf(dto.senderId()), message);
             }
 
             return;

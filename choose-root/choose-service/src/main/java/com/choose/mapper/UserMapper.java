@@ -1,8 +1,10 @@
 package com.choose.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.choose.im.pojos.ChatMessage;
 import com.choose.user.pojos.User;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 import java.util.Map;
@@ -20,5 +22,7 @@ import java.util.Map;
 public interface UserMapper extends BaseMapper<User> {
 
     List<Map<String, Object>> getMonthUsers();
+
+    List<ChatMessage> getChatUserList(@Param("userId")String userId);
 
 }

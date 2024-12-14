@@ -16,7 +16,7 @@ public interface FriendService {
     /**
      * 好友请求
      */
-    void addFriend(FriendDto friendDto);
+    String addFriend(FriendDto friendDto);
 
     /**
      * 获取添加好友列表
@@ -37,6 +37,11 @@ public interface FriendService {
      * 获取聊天记录
      */
     GetChatVo getChatList(getChatListDto dto);
+
+    /**
+     * 已读全部信息
+     */
+    void readMessage(getChatListDto dto);
 
     /**
      * 获取全部好友
