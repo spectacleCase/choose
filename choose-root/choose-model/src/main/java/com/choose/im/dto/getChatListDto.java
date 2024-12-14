@@ -1,10 +1,6 @@
 package com.choose.im.dto;
 
-import com.choose.common.CommentPageDto;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-import java.time.LocalDateTime;
 
 /**
  * <p>
