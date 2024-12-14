@@ -1,6 +1,6 @@
 package com.choose.service.common.impl.storage;
 
-import com.choose.common.vo.UploadVo;
+import com.choose.common.UploadVo;
 import com.choose.service.common.StorageStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

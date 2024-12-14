@@ -8,7 +8,7 @@ import com.choose.comment.dto.ShopCommentDto;
 import com.choose.comment.pojos.CommentNotifications;
 import com.choose.comment.pojos.ShopComment;
 import com.choose.comment.vo.*;
-import com.choose.common.dto.CommentPageDto;
+import com.choose.common.CommentPageDto;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
 import com.choose.constant.FileConstant;

@@ -1,6 +1,6 @@
 package com.choose.service.common.impl.storage;
 
-import com.choose.common.vo.UploadVo;
+import com.choose.common.UploadVo;
 import com.choose.constant.FileConstant;
 import com.choose.service.common.StorageStrategy;
 import com.choose.utils.common.CommonUtils;

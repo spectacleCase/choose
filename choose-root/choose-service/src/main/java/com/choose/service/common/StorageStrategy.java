@@ -1,6 +1,6 @@
 package com.choose.service.common;
 
-import com.choose.common.vo.UploadVo;
+import com.choose.common.UploadVo;
 import org.springframework.web.multipart.MultipartFile;
 
 /**

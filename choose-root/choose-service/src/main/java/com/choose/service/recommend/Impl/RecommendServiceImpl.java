@@ -3,7 +3,7 @@ package com.choose.service.recommend.Impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.choose.annotation.SysLog;
-import com.choose.common.dto.CommentPageDto;
+import com.choose.common.CommentPageDto;
 import com.choose.common.WeatherTemperatureWind;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;

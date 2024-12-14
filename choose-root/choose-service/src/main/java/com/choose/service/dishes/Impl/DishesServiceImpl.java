@@ -167,7 +167,6 @@ public class DishesServiceImpl extends ServiceImpl<DishesMapper, Dishes> impleme
         shops.setMark("");
         String[] r = shops.getCoordinate().split(",");
         shops.setCoordinate(r[1] + "," + r[0]);
-        shops.setUserId(Long.valueOf(UserLocalThread.getUser().getId()));
         shopsMapper.insert(shops);
     }
 
@@ -220,23 +219,17 @@ public class DishesServiceImpl extends ServiceImpl<DishesMapper, Dishes> impleme
      */
     @Override
     public List<ShopListVo> getShopList() {
-        String userId = UserLocalThread.getUser().getId();
-        LambdaQueryWrapper<Shops> queryWrapper = new QueryWrapper<Shops>()
+        LambdaQueryWrapper<Shops> eq = new QueryWrapper<Shops>()
                 .lambda()
-                .eq(Shops::getUserId, userId)
-                .eq(Shops::getIsAudit, AuditEnum.AUDIT_SUCCESS.getCode())
-                .orderByDesc(Shops::getUpdateTime);
-
-        List<Shops> shops = shopsMapper.selectList(queryWrapper);
+                .eq(Shops::getIsAudit, AuditEnum.AUDIT_SUCCESS.getCode());
+        List<Shops> shops = shopsMapper.selectList(eq);
         ArrayList<ShopListVo> shopListVos = new ArrayList<>();
-
         shops.forEach((Shops shop) -> {
             ShopListVo shopListVo = new ShopListVo();
             BeanUtils.copyProperties(shop, shopListVo);
             shopListVo.setId(String.valueOf(shop.getId()));
             shopListVos.add(shopListVo);
         });
-
         return shopListVos;
     }
 

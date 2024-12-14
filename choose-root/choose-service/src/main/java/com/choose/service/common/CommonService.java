@@ -1,10 +1,8 @@
 package com.choose.service.common;
 
-import com.choose.common.dto.GetAddressDitDto;
-import com.choose.common.vo.GetAddressDitVo;
-import com.choose.common.vo.TipsVo;
-import com.choose.common.vo.UploadVo;
-import com.choose.common.vo.WeatherVo;
+import com.choose.common.TipsVo;
+import com.choose.common.UploadVo;
+import com.choose.common.WeatherVo;
 import com.choose.search.vo.SearchVo;
 import com.choose.tag.pojos.Tag;
 import org.springframework.web.multipart.MultipartFile;
@@ -61,9 +59,4 @@ public interface CommonService {
      * 删除全部搜索记录
      */
     void delSearch();
-
-    /**
-     * 查询地址名称和距离
-     */
-    GetAddressDitVo getAddressDit(GetAddressDitDto dto);
 }
