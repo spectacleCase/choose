@@ -1,6 +1,7 @@
 package com.choose.controller.common;
 
-import com.choose.common.UploadVo;
+import com.choose.common.dto.GetAddressDitDto;
+import com.choose.common.vo.UploadVo;
 import com.choose.service.common.CommonService;
 import com.choose.utils.Result;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +64,11 @@ public class CommonController {
     @PostMapping("/v1/getWeather")
     public Result getWeather() {
         return Result.ok(commonService.getWeather());
+    }
+
+    @PostMapping("/v1/getAddressDit")
+    public Result getAddressDit(@RequestBody  GetAddressDitDto dto) {
+        return Result.ok(commonService.getAddressDit(dto));
     }
 
     @PostMapping("/v1/search")
