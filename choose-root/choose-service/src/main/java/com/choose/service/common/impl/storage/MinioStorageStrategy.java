@@ -1,7 +1,7 @@
 package com.choose.service.common.impl.storage;
 
 import com.choose.common.ObjectItem;
-import com.choose.common.UploadVo;
+import com.choose.common.vo.UploadVo;
 import com.choose.enums.AppHttpCodeEnum;
 import com.choose.exception.CustomException;
 import com.choose.service.common.StorageStrategy;

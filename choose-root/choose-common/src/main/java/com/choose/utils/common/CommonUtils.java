@@ -1,6 +1,6 @@
 package com.choose.utils.common;
 
-import com.choose.common.WeatherVo;
+import com.choose.common.vo.WeatherVo;
 
 import java.util.HashMap;
 
