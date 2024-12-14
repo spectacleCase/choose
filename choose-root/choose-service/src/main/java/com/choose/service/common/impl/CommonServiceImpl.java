@@ -6,12 +6,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.choose.annotation.SysLog;
-import com.choose.common.*;
-import com.choose.common.dto.GetAddressDitDto;
-import com.choose.common.vo.GetAddressDitVo;
-import com.choose.common.vo.TipsVo;
-import com.choose.common.vo.UploadVo;
-import com.choose.common.vo.WeatherVo;
+import com.choose.common.SearchTerm;
+import com.choose.common.TipsVo;
+import com.choose.common.UploadVo;
+import com.choose.common.WeatherVo;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.FileConstant;
 import com.choose.dishes.pojos.Shops;
@@ -115,18 +113,6 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
     @SysLog("获取天气情况")
     public WeatherVo getWeather() {
         return CommonUtils.newGetWeather();
-    }
-
-    /**
-     * 查询地址名称和距离
-     */
-    @Override
-    public GetAddressDitVo getAddressDit(GetAddressDitDto dto) {
-        GetAddressDitVo getAddressDitVo = new GetAddressDitVo();
-        getAddressDitVo.setAddressName(com.choose.common.CommonUtils.geocode(dto.target()));
-        getAddressDitVo.setDistance(com.choose.common.CommonUtils.getDistance(dto.address(), dto.target()));
-        return getAddressDitVo ;
-
     }
 
     @Override

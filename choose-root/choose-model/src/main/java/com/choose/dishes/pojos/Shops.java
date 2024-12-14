@@ -47,11 +47,6 @@ public class Shops extends BasePo {
     private String mark;
 
     /**
-     * 发布用户id
-     */
-    private Long userId;
-
-    /**
      * 审核状态（-1审核失败，0未审核，1审核通过）
      */
     private Integer isAudit;

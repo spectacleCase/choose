@@ -3,7 +3,7 @@ package com.choose.controller.comment;
 import com.choose.comment.dto.AddShopCommentDto;
 import com.choose.comment.dto.ShopCommentDetailDto;
 import com.choose.comment.dto.ShopCommentDto;
-import com.choose.common.dto.CommentPageDto;
+import com.choose.common.CommentPageDto;
 import com.choose.service.comment.CommentNotificationsService;
 import com.choose.service.comment.ShopCommentService;
 import com.choose.utils.Result;
