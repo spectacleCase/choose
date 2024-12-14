@@ -93,7 +93,71 @@ public class CommonUtils {
         return null;
 
     }
-    
+
+    /**
+     * 获取地址
+     * @return 地址
+     */
+    public static String geocode(String location) {
+        String url = "https://restapi.amap.com/v3/geocode/regeo";
+        String parameters = "location=" + location + "&key=" + MAP_API_KEY;
+        OkHttpClient client = new OkHttpClient().newBuilder()
+                .build();
+        Request request = new Request.Builder()
+                .url(url + "?" + parameters)
+                .get()
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                String jsonData = Objects.requireNonNull(response.body()).string();
+                JSONObject jsonObject = new JSONObject(jsonData);
+                return jsonObject.getJSONObject("regeocode").get("formatted_address").toString();
+
+            }
+        }catch (Exception e) {
+
+        }
+        return "";
+    }
+
+    /**
+     * 计算两个坐标之间的距离
+     *
+     * @param origin     起点坐标，格式为 "经度,纬度"
+     * @param destination 终点坐标，格式为 "经度,纬度"
+     * @return 两点之间的距离（米）
+     */
+    public static String getDistance(String origin, String destination) {
+        try {
+            // 构建请求 URL
+            String url = "https://restapi.amap.com/v3/distance";
+            String parameters = "key=" + MAP_API_KEY + "&origins=" + origin + "&destination=" + destination;
+            OkHttpClient client = new OkHttpClient().newBuilder()
+                    .build();
+            Request request = new Request.Builder()
+                    .url(url + "?" + parameters)
+                    .get()
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful()) {
+                    String jsonData = Objects.requireNonNull(response.body()).string();
+                    JSONObject jsonObject = new JSONObject(jsonData);
+                    JSONArray resultsArray = jsonObject.getJSONArray("results");
+                    JSONObject firstResult = resultsArray.getJSONObject(0);
+                    String distance = firstResult.getString("distance");
+                    return "距离：" + distance + " 米";
+                }
+            }catch (Exception e) {
+
+            }
+            return "";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
 
 
     /**

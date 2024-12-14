@@ -1,4 +1,4 @@
-package com.choose.common;
+package com.choose.common.vo;
 
 import lombok.Data;
 
