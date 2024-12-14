@@ -59,7 +59,7 @@ public class NotificationWebSocketHandlerServer extends TextWebSocketHandler {
             if (a.equals(message.getPayload())) {
                 return;
             }
-                ImMessage parsedMessage = new Gson().fromJson(message.getPayload(), ImMessage.class);
+            ImMessage parsedMessage = new Gson().fromJson(message.getPayload(), ImMessage.class);
             WebSocketSession receiverSession = USER_SESSIONS.get(Long.valueOf(parsedMessage.getReceiver()));
             // 如果接收者的会话存在且处于打开状态，则发送消息
             ChatMessage chatMessage = new ChatMessage();

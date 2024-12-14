@@ -32,8 +32,7 @@ public class ChatController {
     // todo 只有 -1 0 的同意状态
     @PostMapping("/v1/addFriend")
     public Result addFriend(@RequestBody FriendDto friendDto) {
-        friendService.addFriend(friendDto);
-        return Result.ok();
+        return Result.ok().setMessage(friendService.addFriend(friendDto));
     }
 
     @PostMapping("/v1/selectFriend")
