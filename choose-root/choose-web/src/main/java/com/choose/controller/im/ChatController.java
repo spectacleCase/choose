@@ -29,15 +29,20 @@ public class ChatController {
     @Resource
     private FriendService friendService;
 
+    // todo 只有 -1 0 的同意状态
     @PostMapping("/v1/addFriend")
     public Result addFriend(@RequestBody FriendDto friendDto) {
-        friendService.addFriend(friendDto);
-        return Result.ok();
+        return Result.ok().setMessage(friendService.addFriend(friendDto));
     }
 
     @PostMapping("/v1/selectFriend")
     public Result selectFriend(@RequestBody SelectFriendDto selectFriendDto) {
         return Result.ok(friendService.selectFriend(selectFriendDto));
+    }
+
+    @PostMapping("/v1/getNewFriendList")
+    public Result getNewFriendList() {
+        return Result.ok(friendService.getNewFriendList());
     }
 
     @PostMapping("/v1/getFriendList")
@@ -54,6 +59,17 @@ public class ChatController {
     @PostMapping("/v1/getChatList")
     public Result getChatList(@RequestBody getChatListDto dto) {
         return Result.ok(friendService.getChatList(dto));
+    }
+
+    @PostMapping("/v1/readMessage")
+    public Result readMessage(@RequestBody getChatListDto dto) {
+        friendService.readMessage(dto);
+        return Result.ok();
+    }
+
+    @PostMapping("/v1/getChatUserList")
+    public Result getChatUserList() {
+        return Result.ok(friendService.getChatUserList());
     }
 
 
