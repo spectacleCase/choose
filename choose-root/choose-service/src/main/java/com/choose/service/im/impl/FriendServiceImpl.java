@@ -61,7 +61,7 @@ public class FriendServiceImpl implements FriendService {
 
 
     @Override
-    public void addFriend(FriendDto friendDto) {
+    public String addFriend(FriendDto friendDto) {
         Friend friend = new Friend();
         friend.setUserId(Long.valueOf(UserLocalThread.getUser().getId()));
         friend.setFriendId(Long.valueOf(friendDto.friendId()));
@@ -76,11 +76,12 @@ public class FriendServiceImpl implements FriendService {
         friendQueryWrapper.in(Friend::getStatus, CommonConstants.ChatFiend.agree, CommonConstants.ChatFiend.ToBeConfirmed);
         List<Friend> friendList = friendMapper.selectList(friendQueryWrapper);
         if (!friendList.isEmpty()) {
-            return;
+            return "好友已添加，请勿重复添加";
             // throw new CustomException(AppHttpCodeEnum.DATA_EXIST);
         }
         friendMapper.insert(friend);
         ns.sendComment(Long.valueOf(friendDto.friendId()), "您有一条好友请求：（备注）" + friendDto.remark());
+        return "已请求好友添加";
     }
 
     /**

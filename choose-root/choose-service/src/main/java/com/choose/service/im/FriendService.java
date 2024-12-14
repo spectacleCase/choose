@@ -16,7 +16,7 @@ public interface FriendService {
     /**
      * 好友请求
      */
-    void addFriend(FriendDto friendDto);
+    String addFriend(FriendDto friendDto);
 
     /**
      * 获取添加好友列表
