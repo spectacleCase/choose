@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.choose.apspect.bo.LogQueueConsumer;
 import com.choose.apspect.bo.SysLogBO;
 import com.choose.common.SysLog;
+import com.choose.config.RabbitMQConfig;
 import com.choose.mapper.SysLogMapper;
 import com.choose.service.common.SysLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
@@ -18,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,8 +41,34 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
+    private final Integer MAX_QUEUE_SIZE = 500;
+
     @Resource
     private ApplicationContext applicationContext;
+
+    private final Queue<SysLogBO> logQueue = new ConcurrentLinkedQueue<>();
+
+    @RabbitListener(queues = RabbitMQConfig.LOG_QUEUE)
+    public void receiveLogMessage(SysLogBO logMessage) {
+        log.info("Received log message: {}", logMessage);
+        logQueue.add(logMessage);
+        if (logQueue.size() >= MAX_QUEUE_SIZE) {
+            saveLogsToDatabase(logQueue);
+            logQueue.clear(); // 清空队列
+        }
+    }
+
+    private void saveLogsToDatabase(Queue<SysLogBO> logQueue) {
+        List<SysLog> sysLogs = new ArrayList<>();
+        for (SysLogBO logMessage : logQueue) {
+            SysLog sysLog = new SysLog();
+            BeanUtils.copyProperties(logMessage, sysLog);
+            sysLogs.add(sysLog);
+        }
+        SysLogService proxy = applicationContext.getBean(SysLogService.class);
+        proxy.saveBatch(sysLogs);
+        log.info("批量处理完成，处理日志数量: {}", sysLogs.size());
+    }
 
     @Override
     public void writeLog() {
@@ -66,8 +97,10 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     public void onApplicationEvent(@NotNull ContextClosedEvent event) {
         log.info("Spring Boot 服务关闭...");
         log.info("写入全部日志...");
-        int num = LogQueueConsumer.getQueueSize();
-        saveSysLog(num);
+        // int num = LogQueueConsumer.getQueueSize();
+        // saveSysLog(num);
+        saveLogsToDatabase(logQueue);
+        logQueue.clear(); // 清空队列
     }
 
 

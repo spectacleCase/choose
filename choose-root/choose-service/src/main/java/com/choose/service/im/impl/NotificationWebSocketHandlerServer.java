@@ -75,6 +75,7 @@ public class NotificationWebSocketHandlerServer extends TextWebSocketHandler {
             chatMessage.setIsRead(0);
             // }
             chatMapper.insert(chatMessage);
+            // service -> common
             if (receiverSession != null && receiverSession.isOpen()) {
                 receiverSession.sendMessage(message);
             }

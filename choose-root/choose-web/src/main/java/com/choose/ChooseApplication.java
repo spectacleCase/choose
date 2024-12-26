@@ -32,6 +32,6 @@ public class ChooseApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-            sysLogService.writeLog();
+            // sysLogService.writeLog();
     }
 }

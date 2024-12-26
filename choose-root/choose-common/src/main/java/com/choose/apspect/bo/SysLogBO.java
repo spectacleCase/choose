@@ -2,14 +2,21 @@ package com.choose.apspect.bo;
 
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Date;
-
 
 /**
  * @author 桌角的眼镜
  */
 @Data
-public class SysLogBO {
+public class SysLogBO implements Serializable {
+
+    /**
+     *  添加序列化版本号
+     */
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * 客户端ip
@@ -60,7 +67,6 @@ public class SysLogBO {
      * 响应状态
      */
     private String success;
-
 
     /**
      * 备注

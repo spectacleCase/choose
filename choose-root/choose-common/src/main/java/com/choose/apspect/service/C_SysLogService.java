@@ -3,8 +3,12 @@ package com.choose.apspect.service;
 
 import com.choose.apspect.bo.LogQueueConsumer;
 import com.choose.apspect.bo.SysLogBO;
+import com.choose.config.RabbitMQConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
 
 
 /**
@@ -13,6 +17,9 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class C_SysLogService {
+
+    @Resource
+    private RabbitTemplate rabbitTemplate;
 
 
     public boolean save(SysLogBO sysLogBO) {
@@ -35,7 +42,8 @@ public class C_SysLogService {
         // log.info(sysLog);
 
         // 推入日志队列
-        LogQueueConsumer.produceLog(sysLogBO);
+        // LogQueueConsumer.produceLog(sysLogBO);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.LOG_EXCHANGE, RabbitMQConfig.LOG_ROUTING_KEY, sysLogBO);
         return true;
     }
 
