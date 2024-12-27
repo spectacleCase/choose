@@ -1,9 +1,8 @@
 package com.choose_admin.controller;
 
-import com.choose.admin.dishes.UpdateShopStatusDto;
+import com.choose.admin.dishes.UpdateStatusDto;
 import com.choose.common.dto.CommentPageDto;
 import com.choose.utils.Result;
-import com.choose_admin.service.common.AdminCommonService;
 import com.choose_admin.service.dishes.AdminDishesService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,9 +36,29 @@ public class AdminDishesController {
         return Result.ok(adminDishesService.getNotExamineShop(commentPageDto));
     }
 
-    @PostMapping("/v1/updateStatus")
-    public Result updateShopStatus(@RequestBody UpdateShopStatusDto dto) {
+    /**
+     * 获取未审核的菜品
+     */
+    @PostMapping("/v1/getNotExamineDishes")
+    public Result getNotExamineDishes(@RequestBody CommentPageDto commentPageDto) {
+        return Result.ok(adminDishesService.getNotExamineDishes(commentPageDto));
+    }
+
+    /**
+     * 修改菜品状态
+     */
+    @PostMapping("/v1/updateShopStatus")
+    public Result updateShopStatus(@RequestBody UpdateStatusDto dto) {
         boolean result = adminDishesService.updateShopStatus(dto);
+        return Result.ok(result);
+    }
+
+    /**
+     * 修改店铺状态
+     */
+    @PostMapping("/v1/updateDishesStatus")
+    public Result updateDishesStatus(@RequestBody UpdateStatusDto dto) {
+        boolean result = adminDishesService.updateDishesStatus(dto);
         return Result.ok(result);
     }
 }

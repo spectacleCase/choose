@@ -1,10 +1,12 @@
 package com.choose_admin.service.dishes;
 
-import com.choose.admin.dishes.UpdateShopStatusDto;
+import com.choose.admin.dishes.UpdateStatusDto;
 import com.choose.common.dto.CommentPageDto;
+import com.choose.dishes.vo.AdminDishesVo;
 import com.choose.dishes.vo.AdminShopVo;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -21,5 +23,9 @@ public interface AdminDishesService {
     public List<AdminShopVo> getNotExamineShop(CommentPageDto commentPageDto);
 
     // 修改店铺状态
-    boolean updateShopStatus(UpdateShopStatusDto dto);
+    boolean updateShopStatus(UpdateStatusDto dto);
+
+    List<AdminDishesVo> getNotExamineDishes(CommentPageDto commentPageDto);
+
+    boolean updateDishesStatus(UpdateStatusDto dto);
 }

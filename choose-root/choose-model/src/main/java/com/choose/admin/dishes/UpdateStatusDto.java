@@ -6,7 +6,7 @@ import lombok.Data;
  * @author lizhentao
  */
 @Data
-public class UpdateShopStatusDto {
+public class UpdateStatusDto {
     private String id;
     private Integer status;
 }

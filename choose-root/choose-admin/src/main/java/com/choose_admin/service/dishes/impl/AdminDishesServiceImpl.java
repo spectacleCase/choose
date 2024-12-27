@@ -3,14 +3,13 @@ package com.choose_admin.service.dishes.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.choose.admin.dishes.UpdateShopStatusDto;
+import com.choose.admin.dishes.UpdateStatusDto;
 import com.choose.common.dto.CommentPageDto;
+import com.choose.dishes.pojos.Dishes;
 import com.choose.dishes.pojos.Shops;
+import com.choose.dishes.vo.AdminDishesVo;
 import com.choose.dishes.vo.AdminShopVo;
-import com.choose.mapper.ShopsMapper;
-import com.choose.mapper.TagAssociationMapper;
-import com.choose.mapper.TagMapper;
-import com.choose.mapper.UserMapper;
+import com.choose.mapper.*;
 import com.choose.service.auto.UserService;
 import com.choose.tag.pojos.Tag;
 import com.choose.tag.pojos.TagAssociation;
@@ -21,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +40,9 @@ public class AdminDishesServiceImpl implements AdminDishesService {
 
     @Resource
     private ShopsMapper shopsMapper;
+
+    @Resource
+    private DishesMapper dishesMapper;
 
     @Resource
     private TagMapper tagMapper;
@@ -150,7 +153,80 @@ public class AdminDishesServiceImpl implements AdminDishesService {
     }
 
     @Override
-    public boolean updateShopStatus(UpdateShopStatusDto dto) {
+    public List<AdminDishesVo> getNotExamineDishes(CommentPageDto commentPageDto) {
+        Page<Dishes> page = new Page<>((commentPageDto.getPage()), 5);
+        System.out.println(commentPageDto.getPage());
+
+        LambdaQueryWrapper<Dishes> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Dishes::getIsAudit, 0);
+
+        List<Dishes> dishesList = dishesMapper.selectPage(page,queryWrapper).getRecords();
+        Set<Long> shopIds = dishesList.stream().map(Dishes::getShop).collect(Collectors.toSet());
+        Set<Long> dishIds = dishesList.stream().map(Dishes::getId).collect(Collectors.toSet());
+        if (shopIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<Shops> shopsQuery = new LambdaQueryWrapper<>();
+        shopsQuery.in(Shops::getId, shopIds);
+        Map<Long, Shops> shopMap = shopsMapper.selectList(shopsQuery).stream()
+                .collect(Collectors.toMap(Shops::getId, Function.identity()));
+        if (dishIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        LambdaQueryWrapper<TagAssociation> tagAssociationQuery = new LambdaQueryWrapper<>();
+        tagAssociationQuery.in(TagAssociation::getModelId, dishIds);
+        List<TagAssociation> tagAssociations = tagAssociationMapper.selectList(tagAssociationQuery);
+        Set<Long> tagIds = tagAssociations.stream().map(TagAssociation::getTagId).collect(Collectors.toSet());
+        if (tagIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        LambdaQueryWrapper<Tag> tagQuery = new LambdaQueryWrapper<>();
+        tagQuery.in(Tag::getId, tagIds);
+        Map<Long, Tag> tagMap = tagMapper.selectList(tagQuery).stream()
+                .collect(Collectors.toMap(Tag::getId, Function.identity()));
+
+        Map<Long, List<TagAssociation>> dishTagMap = tagAssociations.stream()
+                .collect(Collectors.groupingBy(TagAssociation::getModelId));
+        List<AdminDishesVo> result = new ArrayList<>();
+        for (Dishes dish : dishesList) {
+            AdminDishesVo vo = new AdminDishesVo();
+            vo.setId(dish.getId().toString());
+            vo.setFoodName(dish.getDishesName());
+            vo.setImageUrl(Arrays.asList(dish.getImage().split(",")));
+
+            Shops shop = shopMap.get(dish.getShop());
+            if (shop != null) {
+                vo.setShopName(shop.getShopName());
+                vo.setLocation(shop.getCoordinate());
+                // 解析坐标
+                String[] coordinates = shop.getCoordinate().split(",");
+                if (coordinates.length == 2) {
+                    vo.setLongitude(coordinates[0]);
+                    vo.setLatitude(coordinates[1]);
+                }
+            }
+
+            List<TagAssociation> associations = dishTagMap.get(dish.getId());
+            List<String> tags = new ArrayList<>();
+            if (associations != null) {
+                for (TagAssociation association : associations) {
+                    Tag tag = tagMap.get(association.getTagId());
+                    if (tag != null) {
+                        tags.add(tag.getTag());
+                    }
+                }
+            }
+            vo.setTags(tags);
+            vo.setSubmitTime(dish.getCreateTime());
+            result.add(vo);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean updateShopStatus(UpdateStatusDto dto) {
         // 创建更新条件
         LambdaUpdateWrapper<Shops> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Shops::getId, dto.getId())
@@ -162,5 +238,19 @@ public class AdminDishesServiceImpl implements AdminDishesService {
         // 返回更新结果
         return result > 0;
 
+    }
+
+    @Override
+    public boolean updateDishesStatus(UpdateStatusDto dto) {
+        // 创建更新条件
+        LambdaUpdateWrapper<Dishes> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Dishes::getId, dto.getId())
+                .set(Dishes::getIsAudit, dto.getStatus());
+
+        // 执行更新操作
+        int result = dishesMapper.update(null, updateWrapper);
+
+        // 返回更新结果
+        return result > 0;
     }
 }

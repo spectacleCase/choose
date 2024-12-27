@@ -8,6 +8,7 @@ import com.choose.recommoend.vo.RecommendVo;
 import com.choose.search.vo.SearchVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -48,4 +49,6 @@ public interface DishesMapper extends BaseMapper<Dishes> {
      */
     List<SearchVo> searchShopsAndDishes(@Param("searchTerm") String searchTerm);
 
+    @Select("SELECT * FROM choose_dishes WHERE is_audit = 0 LIMIT #{offset}, #{pageSize}")
+    List<Dishes> selectNotExaminedDishes(@Param("offset") int offset, @Param("pageSize") int pageSize);
 }
