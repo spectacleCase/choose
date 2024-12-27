@@ -264,7 +264,7 @@ public class DishesServiceImpl extends ServiceImpl<DishesMapper, Dishes> impleme
     }
 
     /**
-     * 获取id菜品的详情
+     * 获取id店铺的详情
      */
     @Override
     public ShopDetailsVo getShopDetails(ShopDetailsDto dto) {

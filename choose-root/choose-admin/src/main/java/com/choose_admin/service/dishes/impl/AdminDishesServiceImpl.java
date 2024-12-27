@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.choose.admin.dishes.UpdateStatusDto;
+import com.choose.common.CommonUtils;
 import com.choose.common.dto.CommentPageDto;
 import com.choose.dishes.pojos.Dishes;
 import com.choose.dishes.pojos.Shops;
@@ -110,8 +111,9 @@ public class AdminDishesServiceImpl implements AdminDishesService {
             AdminShopVo vo = new AdminShopVo();
             vo.setId(shop.getId().toString());
             vo.setShopName(shop.getShopName());
-            vo.setLocation(shop.getCoordinate());
+            // vo.setLocation(shop.getCoordinate());
             vo.setCreateTime(shop.getCreateTime());
+
 
             // 解析坐标为经纬度
             if (shop.getCoordinate() != null) {
@@ -119,6 +121,7 @@ public class AdminDishesServiceImpl implements AdminDishesService {
                 if (coordinates.length == 2) {
                     vo.setLongitude(coordinates[1]);
                     vo.setLatitude(coordinates[0]);
+                    vo.setLocation(CommonUtils.geocode(coordinates[1] + "," +  coordinates[0]));
                 }
             }
 
@@ -199,12 +202,13 @@ public class AdminDishesServiceImpl implements AdminDishesService {
             Shops shop = shopMap.get(dish.getShop());
             if (shop != null) {
                 vo.setShopName(shop.getShopName());
-                vo.setLocation(shop.getCoordinate());
+                // vo.setLocation(shop.getCoordinate());
                 // 解析坐标
                 String[] coordinates = shop.getCoordinate().split(",");
                 if (coordinates.length == 2) {
                     vo.setLongitude(coordinates[0]);
                     vo.setLatitude(coordinates[1]);
+                    vo.setLocation(CommonUtils.geocode(coordinates[0] + "," +  coordinates[1]));
                 }
             }
 
