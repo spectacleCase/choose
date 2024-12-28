@@ -193,6 +193,63 @@ public class FriendServiceImpl implements FriendService {
     /**
      * 获取俩天记录
      */
+    // @Override
+    // public GetChatVo getChatList(getChatListDto dto) {
+    //     readMessage(dto);
+    //
+    //     GetChatVo getChatVo = new GetChatVo();
+    //     LambdaQueryWrapper<ChatMessage> wrapper = Wrappers.lambdaQuery();
+    //
+    //     // 设置查询条件：发送方或接收方为当前用户或目标用户
+    //     wrapper.and(w -> w.eq(ChatMessage::getSender, dto.getId())
+    //             .eq(ChatMessage::getReceiver, UserLocalThread.getUser().getId())
+    //             .or()
+    //             .eq(ChatMessage::getSender, UserLocalThread.getUser().getId())
+    //             .eq(ChatMessage::getReceiver, dto.getId()));
+    //
+    //     // 如果是第一次查询，获取最近一周的聊天记录
+    //     if (dto.getLastCreateTime() == null) {
+    //         LocalDateTime oneWeekAgo = LocalDateTime.now().minusWeeks(1);
+    //         wrapper.ge(ChatMessage::getCreateTime, oneWeekAgo);
+    //     } else {
+    //         // 否则，根据上次查询的最大 create_time 来查询更早的聊天记录
+    //         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    //         LocalDateTime lastCreateTime = LocalDateTime.parse(dto.getLastCreateTime(), formatter);
+    //         wrapper.lt(ChatMessage::getCreateTime, lastCreateTime);
+    //     }
+    //
+    //     // 执行查询
+    //     List<ChatMessage> chatMessages = chatMapper.selectList(wrapper);
+    //     ArrayList<ChatMessageVo> chatMessageVos = new ArrayList<>();
+    //     for (ChatMessage chatMessage : chatMessages) {
+    //         ChatMessageVo chatMessageVo = new ChatMessageVo();
+    //         BeanUtils.copyProperties(chatMessage, chatMessageVo);
+    //         chatMessageVo.setId(String.valueOf(chatMessage.getId()));
+    //         chatMessageVo.setSender(String.valueOf(chatMessage.getSender()));
+    //         chatMessageVo.setReceiver(String.valueOf(chatMessage.getReceiver()));
+    //         chatMessageVos.add(chatMessageVo);
+    //     }
+    //
+    //     // 查询用户信息
+    //     LambdaQueryWrapper<User> ulw = new LambdaQueryWrapper<>();
+    //     ulw.in(User::getId, dto.getId(), UserLocalThread.getUser().getId());
+    //     List<User> users = userMapper.selectList(ulw);
+    //
+    //     for (User user : users) {
+    //         if (String.valueOf(user.getId()).equals(dto.getId())) {
+    //             getChatVo.setSeId(String.valueOf(user.getId()));
+    //             getChatVo.setSeAvatar(FileConstant.COS_HOST + user.getAvatar());
+    //             getChatVo.setSeNickname(user.getNickname());
+    //         } else {
+    //             getChatVo.setId(String.valueOf(user.getId()));
+    //             getChatVo.setAvatar(FileConstant.COS_HOST + user.getAvatar());
+    //             getChatVo.setNickname(user.getNickname());
+    //         }
+    //     }
+    //     getChatVo.setChatList(chatMessageVos);
+    //     return getChatVo;
+    // }
+
     @Override
     public GetChatVo getChatList(getChatListDto dto) {
         readMessage(dto);
@@ -207,21 +264,17 @@ public class FriendServiceImpl implements FriendService {
                 .eq(ChatMessage::getSender, UserLocalThread.getUser().getId())
                 .eq(ChatMessage::getReceiver, dto.getId()));
 
-        // 如果是第一次查询，获取最近一周的聊天记录
-        if (dto.getLastCreateTime() == null) {
-            LocalDateTime oneWeekAgo = LocalDateTime.now().minusWeeks(1);
-            wrapper.ge(ChatMessage::getCreateTime, oneWeekAgo);
-        } else {
-            // 否则，根据上次查询的最大 create_time 来查询更早的聊天记录
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            LocalDateTime lastCreateTime = LocalDateTime.parse(dto.getLastCreateTime(), formatter);
-            wrapper.lt(ChatMessage::getCreateTime, lastCreateTime);
-        }
+        // 按时间倒序排序，确保最新的聊天记录在最前面
+        wrapper.orderByDesc(ChatMessage::getCreateTime);
 
-        // 执行查询
-        List<ChatMessage> chatMessages = chatMapper.selectList(wrapper);
+        // 设置分页参数
+        Page<ChatMessage> page = new Page<>(dto.getPage(), dto.getPageSize());
+        // 执行分页查询
+        Page<ChatMessage> chatMessagePage = chatMapper.selectPage(page, wrapper);
+
+        // 转换聊天记录
         ArrayList<ChatMessageVo> chatMessageVos = new ArrayList<>();
-        for (ChatMessage chatMessage : chatMessages) {
+        for (ChatMessage chatMessage : chatMessagePage.getRecords()) {
             ChatMessageVo chatMessageVo = new ChatMessageVo();
             BeanUtils.copyProperties(chatMessage, chatMessageVo);
             chatMessageVo.setId(String.valueOf(chatMessage.getId()));
@@ -229,6 +282,9 @@ public class FriendServiceImpl implements FriendService {
             chatMessageVo.setReceiver(String.valueOf(chatMessage.getReceiver()));
             chatMessageVos.add(chatMessageVo);
         }
+
+        // 反转聊天记录顺序，将最后面的放到最前面
+        Collections.reverse(chatMessageVos);
 
         // 查询用户信息
         LambdaQueryWrapper<User> ulw = new LambdaQueryWrapper<>();
@@ -246,7 +302,10 @@ public class FriendServiceImpl implements FriendService {
                 getChatVo.setNickname(user.getNickname());
             }
         }
+
+        // 设置聊天记录
         getChatVo.setChatList(chatMessageVos);
+
         return getChatVo;
     }
 

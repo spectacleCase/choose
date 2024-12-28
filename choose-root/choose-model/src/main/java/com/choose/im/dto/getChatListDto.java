@@ -15,4 +15,6 @@ import lombok.Data;
 public class getChatListDto {
     private String id;
     private String lastCreateTime;
+    private Integer page;
+    private Integer pageSize;
 }
