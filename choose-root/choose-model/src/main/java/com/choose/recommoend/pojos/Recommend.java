@@ -42,5 +42,10 @@ public class Recommend extends BasePo {
      */
     private String description;
 
+    /**
+     * 推荐结果(0未进入 1进入)
+     */
+    private Integer isSuccess;
+
 
 }

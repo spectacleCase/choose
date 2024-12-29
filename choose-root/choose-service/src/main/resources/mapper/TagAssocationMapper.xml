@@ -21,4 +21,11 @@
           AND ta.is_delete = 0
     </select>
 
+    <select id="getTagsByModelIds" resultType="com.choose.tag.pojos.Tag">
+        SELECT * FROM choose_tag_association WHERE model_id IN
+        <foreach collection="modelIds" item="modelId" open="(" separator="," close=")">
+            #{modelId}
+        </foreach>
+    </select>
+
 </mapper>

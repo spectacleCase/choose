@@ -11,7 +11,7 @@
  Target Server Version : 50716 (5.7.16-log)
  File Encoding         : 65001
 
- Date: 26/11/2024 16:52:34
+ Date: 29/12/2024 10:08:08
 */
 
 SET NAMES utf8mb4;
@@ -22,16 +22,17 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `choose_chat`;
 CREATE TABLE `choose_chat`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `type` tinyint(1) NULL DEFAULT NULL COMMENT '信息类型',
-  `sender` int(11) NULL DEFAULT NULL COMMENT '发送方',
-  `receiver` int(11) NULL DEFAULT NULL COMMENT '接受方',
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `type` tinyint(1) NULL DEFAULT NULL COMMENT '信息类型（0:文本，1:图片）',
+  `sender` bigint(20) NULL DEFAULT NULL COMMENT '发送方',
+  `receiver` bigint(20) NULL DEFAULT NULL COMMENT '接受方',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '信息内容',
+  `is_read` tinyint(1) NULL DEFAULT 0 COMMENT '是否已读（1读，0未读）',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `is_delete` tinyint(1) NULL DEFAULT 0 COMMENT '逻辑删除标记',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '聊天消息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1872948394714673154 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '聊天消息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for choose_collect
@@ -45,7 +46,7 @@ CREATE TABLE `choose_collect`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `is_delete` tinyint(1) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1854724343957454850 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1866149213379395586 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for choose_collect_chilren
@@ -63,7 +64,7 @@ CREATE TABLE `choose_collect_chilren`  (
   `is_delete` tinyint(1) NULL DEFAULT 0,
   `dish_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 54 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 56 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for choose_column
@@ -115,6 +116,65 @@ CREATE TABLE `choose_dishes`  (
   `is_audit` tinyint(1) NULL DEFAULT 0 COMMENT '审核状态（-1审核失败，0未审核，1审核通过）',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜品表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for choose_foods_heat
+-- ----------------------------
+DROP TABLE IF EXISTS `choose_foods_heat`;
+CREATE TABLE `choose_foods_heat`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '食物的名称',
+  `alias` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '食物的别称',
+  `calories` int(10) NOT NULL COMMENT '食物的热量，单位为大卡',
+  `proportion` int(20) NOT NULL COMMENT '食物的比例信息，例如100(单位克)',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 73 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '食物热量信息表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for choose_friend
+-- ----------------------------
+DROP TABLE IF EXISTS `choose_friend`;
+CREATE TABLE `choose_friend`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID，表示发起好友请求的用户',
+  `friend_id` bigint(20) NOT NULL COMMENT '好友ID，表示被添加为好友的用户',
+  `status` tinyint(4) NOT NULL COMMENT '好友关系状态 1:已添加、0:待确认、-1:已删除',
+  `create_time` datetime NOT NULL COMMENT '创建时间，表示好友关系建立的时间',
+  `update_time` datetime NOT NULL COMMENT '更新时间，表示好友关系状态更新的时间',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '备注，表示对好友的备注信息（如昵称、标签等）',
+  `is_delete` tinyint(1) NULL DEFAULT 0 COMMENT '逻辑删除标记',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1866155366796656643 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '好友表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for choose_group
+-- ----------------------------
+DROP TABLE IF EXISTS `choose_group`;
+CREATE TABLE `choose_group`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '群组名称',
+  `owner_id` bigint(20) NOT NULL COMMENT '群主ID',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '群组头像',
+  `create_time` datetime NOT NULL COMMENT '创建时间，表示群组创建的时间',
+  `update_time` datetime NOT NULL COMMENT '更新时间，表示群组信息更新的时间',
+  `is_delete` tinyint(1) NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '群组表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for choose_group_member
+-- ----------------------------
+DROP TABLE IF EXISTS `choose_group_member`;
+CREATE TABLE `choose_group_member`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `group_id` bigint(20) NOT NULL COMMENT '群组ID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID，表示群组成员',
+  `role` tinyint(4) NOT NULL COMMENT '角色(1:群主、2:管理员、0:普通成员）',
+  `create_time` datetime NOT NULL COMMENT '创建时间，表示群组创建的时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(1) NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '群组成员表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for choose_mark
@@ -188,7 +248,7 @@ CREATE TABLE `choose_search_history`  (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `is_delete` tinyint(1) NULL DEFAULT 0 COMMENT '逻辑删除(0存在 1删除)',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1859967689034543107 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '搜索记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1869027848767635459 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '搜索记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for choose_shop_comment
@@ -219,6 +279,7 @@ CREATE TABLE `choose_shops`  (
   `image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图片url',
   `coordinate` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '坐标',
   `mark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '评分',
+  `user_id` bigint(20) NOT NULL COMMENT '发布用户id',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `is_delete` tinyint(1) UNSIGNED ZEROFILL NULL DEFAULT 0 COMMENT '逻辑删除(0存在 1删除)',
@@ -245,7 +306,7 @@ CREATE TABLE `choose_sys_log`  (
   `remark` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '备注',
   `create_date` datetime NOT NULL COMMENT '创建日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1860585256145051651 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1873058801534054404 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for choose_tag

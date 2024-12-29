@@ -4,6 +4,7 @@ import com.choose.common.dto.CommentPageDto;
 import com.choose.recommoend.dto.RecommendDto;
 import com.choose.recommoend.vo.RecommendListVo;
 import com.choose.recommoend.vo.RecommendVo;
+import com.choose.utils.Result;
 
 import java.util.List;
 
@@ -26,11 +27,8 @@ public interface RecommendService {
     /**
      * 生产版推荐菜品
      */
-    public List<RecommendVo> recommendPlus(int num);
+    List<RecommendVo> recommendMinus(RecommendDto dto);
 
-    /**
-     * 生产版推荐菜品
-     */
-    public List<RecommendVo> recommendMinus(RecommendDto dto);
+    void recommendSuccess(String id);
 
 }

@@ -1,5 +1,6 @@
 package com.choose.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.choose.tag.pojos.Tag;
 import com.choose.tag.pojos.TagAssociation;
@@ -7,7 +8,9 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+
 import java.util.List;
+import java.util.Set;
 
 /**
  * <p>
@@ -25,5 +28,8 @@ public interface TagAssociationMapper extends BaseMapper<TagAssociation> {
 
     @Select("SELECT * FROM choose_tag_association WHERE model_id = #{modelId}")
     List<TagAssociation> selectByModelId(@Param("modelId") Long modelId);
+
+    List<Tag> getTagsByModelIds(@Param("modelIds") Set<Long> modelIds);
+
 }
 

@@ -1,9 +1,6 @@
 package com.choose.service.recommend;
 
-import com.choose.mapper.DishesMapper;
-import com.choose.mapper.RecommendMapper;
-import com.choose.mapper.ShopsMapper;
-import com.choose.mapper.TagAssociationMapper;
+import com.choose.mapper.*;
 import com.choose.recommoend.vo.RecommendVo;
 
 import javax.annotation.Resource;
@@ -32,6 +29,9 @@ public abstract class RecommendationStrategy {
 
     @Resource
     protected ShopsMapper shopsMapper;
+
+    @Resource
+    protected TagMapper tagMapper;
 
 
     /**

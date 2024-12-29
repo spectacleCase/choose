@@ -5,10 +5,7 @@ import com.choose.recommoend.dto.RecommendDto;
 import com.choose.recommoend.vo.RecommendListVo;
 import com.choose.service.recommend.RecommendService;
 import com.choose.utils.Result;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
@@ -34,13 +31,20 @@ public class RecommendController {
     @PostMapping("/v1/recommend")
     public Result recommend(@Valid  @RequestBody RecommendDto dto) {
        return Result.ok(recommendService.recommendMinus(dto));
-        // List<RecommendVo> recommendVos = recommendService.recommendPlus(1);
-//         return Result.ok(recommendVos);
     }
 
     @PostMapping("/v1/recommend-record")
     public Result recommendRecord(@Valid  @RequestBody CommentPageDto dto) {
         List<RecommendListVo> recommends = recommendService.recommendRecord(dto);
         return Result.ok(recommends);
+    }
+
+    /**
+     * 推荐成功
+     */
+    @GetMapping("/v1/re_su")
+    public Result recommendSuccess(String id) {
+        recommendService.recommendSuccess(id);
+        return Result.ok();
     }
 }

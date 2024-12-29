@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Objects;
@@ -140,7 +141,7 @@ public class SysLogAspect {
             //处理异常
             if(Objects.nonNull(throwable)) {
                 sysLogBO.setSuccess(CommonConstants.ResultCode.ERROR.code.toString());
-                sysLogBO.setResponseContent(CommonConstants.ResultCode.ERROR.message);
+                sysLogBO.setResponseContent(throwable.getLocalizedMessage());
             }
             return sysLogService.save(sysLogBO);
         });
