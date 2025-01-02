@@ -1,8 +1,6 @@
 package com.choose.utils.common;
 
 import com.choose.common.WeatherTemperatureWind;
-import com.choose.enums.AppHttpCodeEnum;
-import com.choose.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -38,7 +36,7 @@ public class WeatherTemperatureWindUtils {
 
     public static Map<String, WeatherTemperatureWind> getWeatherTemperatureWind(String weather, int temperature, int taste) {
         if (Objects.isNull(commonWeatherTemperatureWind) || commonWeatherTemperatureWind.isEmpty()) {
-            throw new CustomException(AppHttpCodeEnum.MAP_INIT_LOSE);
+            // throw new CustomException(AppHttpCodeEnum.MAP_INIT_LOSE);
         }
 
         temperature = temperature - 2;

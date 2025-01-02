@@ -22,7 +22,7 @@ import com.choose.ranking.vo.RankingVo;
 import com.choose.redis.utils.RedisUtils;
 import com.choose.service.dishes.DishesService;
 import com.choose.service.ranking.RankingService;
-import com.choose.textAbstract.TestTextAbstract;
+import com.choose.service.textAbstract.TestTextAbstract;
 import com.choose.user.pojos.Review;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;

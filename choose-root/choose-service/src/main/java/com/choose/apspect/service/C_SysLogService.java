@@ -1,7 +1,6 @@
 package com.choose.apspect.service;
 
 
-import com.choose.apspect.bo.LogQueueConsumer;
 import com.choose.apspect.bo.SysLogBO;
 import com.choose.config.RabbitMQConfig;
 import lombok.extern.slf4j.Slf4j;

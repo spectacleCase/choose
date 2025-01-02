@@ -1,6 +1,5 @@
 package com.choose.service.im.impl;
 
-import com.choose.enums.ChatEnum;
 import com.choose.im.pojos.ChatMessage;
 import com.choose.im.pojos.ImMessage;
 import com.choose.mapper.ChatMapper;

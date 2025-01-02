@@ -1,4 +1,4 @@
-package com.choose.textAbstract;
+package com.choose.service.textAbstract;
 
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;

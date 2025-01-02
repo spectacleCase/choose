@@ -11,13 +11,11 @@ import com.choose.dishes.pojos.Shops;
 import com.choose.dishes.vo.AdminDishesVo;
 import com.choose.dishes.vo.AdminShopVo;
 import com.choose.mapper.*;
-import com.choose.service.auto.UserService;
 import com.choose.tag.pojos.Tag;
 import com.choose.tag.pojos.TagAssociation;
 import com.choose.user.pojos.User;
 import com.choose_admin.service.dishes.AdminDishesService;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.annotation.Resource;
 import java.util.*;

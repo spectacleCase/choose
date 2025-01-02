@@ -4,9 +4,7 @@ import com.choose.admin.dishes.UpdateStatusDto;
 import com.choose.common.dto.CommentPageDto;
 import com.choose.dishes.vo.AdminDishesVo;
 import com.choose.dishes.vo.AdminShopVo;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**

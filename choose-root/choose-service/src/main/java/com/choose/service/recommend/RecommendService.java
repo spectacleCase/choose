@@ -4,7 +4,6 @@ import com.choose.common.dto.CommentPageDto;
 import com.choose.recommoend.dto.RecommendDto;
 import com.choose.recommoend.vo.RecommendListVo;
 import com.choose.recommoend.vo.RecommendVo;
-import com.choose.utils.Result;
 
 import java.util.List;
 

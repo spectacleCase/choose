@@ -2,41 +2,25 @@ package com.choose.service.recommend.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.choose.annotation.SysLog;
 import com.choose.common.dto.CommentPageDto;
-import com.choose.common.WeatherTemperatureWind;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
-import com.choose.dishes.pojos.Dishes;
-import com.choose.dishes.pojos.Shops;
-import com.choose.enums.AppHttpCodeEnum;
-import com.choose.exception.CustomException;
-import com.choose.mapper.ColumnMapper;
-import com.choose.mapper.DishesMapper;
 import com.choose.mapper.RecommendMapper;
-import com.choose.mapper.ShopsMapper;
-import com.choose.ranking.pojos.Column;
 import com.choose.recommoend.dto.RecommendDto;
 import com.choose.recommoend.pojos.Recommend;
 import com.choose.recommoend.vo.RecommendListVo;
 import com.choose.recommoend.vo.RecommendVo;
 import com.choose.service.recommend.RecommendService;
 import com.choose.service.recommend.RecommenderSystem;
-import com.choose.service.tag.TagAssociationService;
-import com.choose.service.tag.TagService;
-import com.choose.tag.pojos.Tag;
-import com.choose.tag.pojos.TagAssociation;
 import com.choose.user.pojos.UserInfo;
-import com.choose.utils.Result;
-import com.choose.utils.common.CommonUtils;
-import com.choose.utils.common.WeatherTemperatureWindUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * <p>

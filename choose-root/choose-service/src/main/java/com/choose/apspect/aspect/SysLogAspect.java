@@ -3,12 +3,12 @@ package com.choose.apspect.aspect;
 import com.choose.annotation.SysLog;
 import com.choose.apspect.bo.SysLogBO;
 import com.choose.apspect.service.C_SysLogService;
+import com.choose.common.CommonUtils;
 import com.choose.common.DateUtils;
 import com.choose.common.HttpServletUtils;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
 import com.choose.josn.JsonUtil;
-import com.choose.utils.common.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -20,12 +20,12 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
+// import com.choose.utils.common.CommonUtils;
 ;
 
 /**

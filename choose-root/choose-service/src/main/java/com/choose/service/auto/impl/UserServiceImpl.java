@@ -30,7 +30,6 @@ import com.choose.user.pojos.User;
 import com.choose.user.pojos.UserInfo;
 import com.choose.user.vo.UserInfoVo;
 import com.choose.user.vo.UserVo;
-import com.choose.weChat.WeChatUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +37,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import javax.validation.constraints.NotBlank;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -91,7 +89,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         UserInfoVo userInfoVo = new UserInfoVo();
         UserInfo userInfo = new UserInfo();
-        SessionKeyAndOpenId weChatAccessTokenResponse = WeChatUtils.getWeChatAccessTokenResponse(appid, secret, dto.getCode());
+        SessionKeyAndOpenId weChatAccessTokenResponse = WeChatService.getWeChatAccessTokenResponse(appid, secret, dto.getCode());
         User user = userMapper.selectOne(Wrappers.<User>lambdaQuery()
                 .eq(User::getOpenid, weChatAccessTokenResponse.getOpenId()));
         if (Objects.isNull(user)) {

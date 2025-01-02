@@ -1,6 +1,5 @@
 package com.choose.im.vo;
 
-import com.choose.im.pojos.ChatMessage;
 import lombok.Data;
 
 import java.util.List;

@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.choose.annotation.SysLog;
-import com.choose.common.*;
+import com.choose.common.SearchTerm;
 import com.choose.common.dto.GetAddressDitDto;
 import com.choose.common.vo.GetAddressDitVo;
 import com.choose.common.vo.TipsVo;
@@ -23,11 +23,10 @@ import com.choose.search.vo.SearchDishesVo;
 import com.choose.search.vo.SearchVo;
 import com.choose.service.common.CommonService;
 import com.choose.service.common.StorageStrategy;
+import com.choose.service.textAbstract.TestTextAbstract;
 import com.choose.tag.pojos.Tag;
-import com.choose.textAbstract.TestTextAbstract;
 import com.choose.user.pojos.User;
 import com.choose.user.pojos.UserInfo;
-import com.choose.utils.common.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -35,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -111,10 +111,24 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
     /**
      * 获取本日的天气情况
      */
+    // @Override
+    // @SysLog("获取天气情况")
+    // public WeatherVo getWeather() {
+    //     return CommonUtils.newGetWeather();
+    // }
     @Override
     @SysLog("获取天气情况")
-    public WeatherVo getWeather() {
-        return CommonUtils.newGetWeather();
+    public  WeatherVo getWeather() {
+        HashMap<String, String> weather = com.choose.common.CommonUtils.getWeather();
+        WeatherVo weatherVo = new WeatherVo();
+        if (weather != null) {
+            weatherVo.setWeather(weather.get("weather"));
+            weatherVo.setTemperature(weather.get("temperature"));
+            weatherVo.setWindpower(weather.get("windpower"));
+            return weatherVo;
+        }
+
+        return null;
     }
 
     /**

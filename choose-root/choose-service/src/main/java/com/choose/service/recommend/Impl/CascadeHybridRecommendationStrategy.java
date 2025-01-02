@@ -4,8 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.choose.dishes.pojos.Dishes;
 import com.choose.dishes.pojos.Shops;
-import com.choose.mapper.RecommendMapper;
-import com.choose.mapper.TagMapper;
 import com.choose.recommoend.pojos.Recommend;
 import com.choose.recommoend.vo.RecommendVo;
 import com.choose.service.recommend.RecommendationStrategy;
@@ -17,7 +15,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;

@@ -2,8 +2,6 @@ package com.choose.im.vo;
 
 import lombok.Data;
 
-import java.util.Date;
-
 /**
  * <p>
  *

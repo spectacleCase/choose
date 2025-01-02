@@ -1,7 +1,5 @@
 package com.choose.im.vo;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.choose.common.BasePo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

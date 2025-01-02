@@ -1,8 +1,6 @@
-package com.choose.weChat;
+package com.choose.service.auto.impl;
 
 import cn.hutool.http.HttpUtil;
-import com.choose.enums.AppHttpCodeEnum;
-import com.choose.exception.CustomException;
 import com.choose.josn.JsonUtil;
 import com.choose.user.pojos.SessionKeyAndOpenId;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +17,7 @@ import java.util.Objects;
  * @since 2024/5/27 下午9:24
  */
 @Slf4j
-public class WeChatUtils {
+public class WeChatService{
 
     /**
      * 调用微信接口响应用户数据
@@ -33,13 +31,15 @@ public class WeChatUtils {
             SessionKeyAndOpenId sessionKeyAndOpenId = JsonUtil.toInstance(res, SessionKeyAndOpenId.class);
             if(!Objects.isNull(sessionKeyAndOpenId.getErrmsg())){
                 log.error("not openid");
-                throw new CustomException(AppHttpCodeEnum.SERVER_ERROR);
+                // throw new CustomException(AppHttpCodeEnum.SERVER_ERROR);
+                throw new RuntimeException();
             }
             log.info("login user res: {}", res);
             return sessionKeyAndOpenId;
         } catch (Exception e) {
             log.error("Error occurred while calling WeChat API", e);
-            throw new CustomException(AppHttpCodeEnum.SERVER_ERROR);
+            // throw new CustomException(AppHttpCodeEnum.SERVER_ERROR);
+            throw new RuntimeException(e);
         }
     }
 }
