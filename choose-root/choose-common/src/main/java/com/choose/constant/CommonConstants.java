@@ -13,6 +13,12 @@ public interface CommonConstants {
          int PANE_MAX = 50;
     }
 
+    interface LogLevel {
+        String INFO = "INFO";
+        String WARN = "WARN";
+        String ERROR = "ERROR";
+    }
+
     interface ChatFiend {
         Integer agree = 1;
         Integer ToBeConfirmed = 0;

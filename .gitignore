@@ -9,6 +9,7 @@ target/
 .idea/compiler.xml
 .idea/libraries/
 .idea
+.out/
 choose-root/file/images/
 choose-root/choose-admin/src/main/resources/application-dev.yaml
 *.iws

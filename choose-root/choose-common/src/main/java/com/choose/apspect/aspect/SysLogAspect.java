@@ -137,11 +137,13 @@ public class SysLogAspect {
             sysLogBO.setResponseContent(JsonUtil.toJson(result));
             sysLogBO.setCreateDate(DateUtils.getNow());
             sysLogBO.setSuccess(CommonConstants.ResultCode.SUCCESS.code.toString());
+            sysLogBO.setLogLevel(CommonConstants.LogLevel.INFO);
 
             //处理异常
             if(Objects.nonNull(throwable)) {
                 sysLogBO.setSuccess(CommonConstants.ResultCode.ERROR.code.toString());
                 sysLogBO.setResponseContent(throwable.getLocalizedMessage());
+                sysLogBO.setLogLevel(CommonConstants.LogLevel.ERROR);
             }
             return sysLogService.save(sysLogBO);
         });
