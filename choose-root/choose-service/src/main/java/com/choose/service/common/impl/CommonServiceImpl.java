@@ -8,12 +8,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.choose.annotation.SysLog;
 import com.choose.common.SearchTerm;
 import com.choose.common.dto.GetAddressDitDto;
-import com.choose.common.vo.GetAddressDitVo;
-import com.choose.common.vo.TipsVo;
-import com.choose.common.vo.UploadVo;
-import com.choose.common.vo.WeatherVo;
+import com.choose.common.vo.*;
+import com.choose.config.RabbitMQConfig;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.FileConstant;
+import com.choose.dishes.pojos.FoodsHeat;
 import com.choose.dishes.pojos.Shops;
 import com.choose.enums.AppHttpCodeEnum;
 import com.choose.exception.CustomException;
@@ -28,9 +27,13 @@ import com.choose.service.common.StorageStrategy;
 import com.choose.tag.pojos.Tag;
 import com.choose.user.pojos.User;
 import com.choose.user.pojos.UserInfo;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -70,7 +73,14 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
     @Resource
     private SearchHistoryMapper searchHistoryMapper;
 
-    private final ModelServiceFactory modelServiceFactory;
+    @Resource
+    private ModelServiceFactory modelServiceFactory;
+
+    @Resource
+    private FooHeatMapper fooHeatMapper;
+
+    @Resource
+    private RabbitTemplate rabbitTemplate;
 
 
     /**
@@ -244,6 +254,34 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
             // 执行更新操作
             searchHistoryMapper.update(null, updateWrapper);
             return;
+        }
+        throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST);
+    }
+
+    @Override
+    // @SysLog("识别食物")
+    public HeatRecognitionVo heatRecognition(String foodImage) {
+        if(StringUtils.isNotEmpty(foodImage)) {
+            Object siliconFlow = modelServiceFactory.getService("siliconFlow").process("",foodImage);
+            HeatRecognitionVo heatRecognitionVo = new HeatRecognitionVo();
+            JsonObject asJsonObject = JsonParser.parseString((String) siliconFlow).getAsJsonObject();
+            String foodName = asJsonObject.get("food_name").getAsString();
+            if(StringUtils.isEmpty(foodName)) {
+                return heatRecognitionVo;
+            }
+            heatRecognitionVo.setFoodName(foodName);
+            FoodsHeat foodsHeat = fooHeatMapper.selectOne(new LambdaQueryWrapper<FoodsHeat>().eq(FoodsHeat::getName, foodName));
+            if(Objects.nonNull(foodsHeat)) {
+                heatRecognitionVo.setCalories(String.valueOf(foodsHeat.getCalories()));
+                heatRecognitionVo.setPortionSize(String.valueOf(foodsHeat.getProportion()));
+            } else {
+                // 推入任务队列爬虫
+                rabbitTemplate.convertAndSend(RabbitMQConfig.CRAWLER_EXCHANGE, RabbitMQConfig.CRAWLER_ROUTING_KEY, foodName);
+                heatRecognitionVo.setCalories(asJsonObject.get("calories").getAsString());
+                heatRecognitionVo.setPortionSize(String.valueOf(asJsonObject.get("portion_size").getAsString()));
+            }
+
+            return heatRecognitionVo;
         }
         throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST);
     }

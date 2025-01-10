@@ -48,7 +48,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
 
     private final Queue<SysLogBO> logQueue = new ConcurrentLinkedQueue<>();
 
-    @RabbitListener(queues = RabbitMQConfig.LOG_QUEUE)
+    // @RabbitListener(queues = RabbitMQConfig.LOG_QUEUE)
     public void receiveLogMessage(SysLogBO logMessage) {
         log.info("Received log message: {}", logMessage);
         logQueue.add(logMessage);

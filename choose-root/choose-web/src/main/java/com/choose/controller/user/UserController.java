@@ -79,6 +79,9 @@ public class UserController {
         return Result.ok(user);
     }
 
+    /**
+     * 每天随机健康小知识
+     */
     @PostMapping("/v1/health-tips")
     public Result healthTips() {
         return Result.ok(commonService.healthTips());

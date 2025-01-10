@@ -48,7 +48,7 @@ public class SiliconFlowService implements ModelService<Object> {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", "Qwen/QVQ-72B-Preview");
 
-        JsonArray messagesArray = getJsonElements(prompt);
+        JsonArray messagesArray = getJsonElements(prompt,input[0]);
         requestBody.add("messages", messagesArray);
 
         requestBody.addProperty("stream", false);
@@ -110,7 +110,10 @@ public class SiliconFlowService implements ModelService<Object> {
         return content;
     }
 
-    private static @NotNull JsonArray getJsonElements(String prompt) {
+    private static @NotNull JsonArray getJsonElements(String prompt,String url) {
+        if(url == null || url.isEmpty()) {
+            throw new IllegalArgumentException("图片不存在");
+        }
         JsonObject message = new JsonObject();
         message.addProperty("role", "user");
 
@@ -121,7 +124,7 @@ public class SiliconFlowService implements ModelService<Object> {
         JsonObject imageContent = new JsonObject();
         imageContent.addProperty("type", "image_url");
         JsonObject imageUrl = new JsonObject();
-        imageUrl.addProperty("url", "https://tse3-mm.cn.bing.net/th/id/OIP-C.nW-c52e7FVPcsNk5CsFtQgHaHa?rs=1&pid=ImgDetMain");
+        imageUrl.addProperty("url", url);
         imageUrl.addProperty("detail", "auto");
         imageContent.add("image_url", imageUrl);
 
