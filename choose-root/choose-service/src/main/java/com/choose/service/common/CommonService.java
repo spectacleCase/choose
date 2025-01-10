@@ -38,7 +38,7 @@ public interface CommonService {
     List<Tag> getTag();
 
     /**
-     * 获取本日的天气情况
+     * 获取今日的天气情况
      */
     WeatherVo getWeather();
 

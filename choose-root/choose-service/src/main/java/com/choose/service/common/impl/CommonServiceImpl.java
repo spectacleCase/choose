@@ -21,12 +21,14 @@ import com.choose.mapper.*;
 import com.choose.search.pojos.SearchHistory;
 import com.choose.search.vo.SearchDishesVo;
 import com.choose.search.vo.SearchVo;
+import com.choose.service.aiModel.DeepSeekV3Service;
+import com.choose.service.aiModel.ModelServiceFactory;
 import com.choose.service.common.CommonService;
 import com.choose.service.common.StorageStrategy;
-import com.choose.service.textAbstract.TestTextAbstract;
 import com.choose.tag.pojos.Tag;
 import com.choose.user.pojos.User;
 import com.choose.user.pojos.UserInfo;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,7 @@ import java.util.Objects;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements CommonService {
 
     @Resource
@@ -67,6 +70,8 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
     @Resource
     private SearchHistoryMapper searchHistoryMapper;
 
+    private final ModelServiceFactory modelServiceFactory;
+
 
     /**
      * 上传照片
@@ -83,10 +88,8 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
     @SysLog("每天健康小知识")
     public TipsVo healthTips() {
         TipsVo tipsVo = new TipsVo();
-        StringBuilder extracted = TestTextAbstract.getHealthTips();
-        // StringBuilder e = new StringBuilder("吃太多糖不仅会让你发胖，还会加速皮肤老化哦！");
-        // tipsVo.setTips(e);
-        tipsVo.setTips(extracted);
+        String tips = (String)modelServiceFactory.getService("deepSeekV3").process(DeepSeekV3Service.functionName.GET_HEALTH_TIPS);
+        tipsVo.setTips(new StringBuilder(tips));
         return tipsVo;
     }
 

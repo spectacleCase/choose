@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.choose.annotation.SysLog;
+import com.choose.common.dto.CommentPageDto;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
 import com.choose.dishes.dto.AddDishesDto;
@@ -244,13 +245,13 @@ public class DishesServiceImpl extends ServiceImpl<DishesMapper, Dishes> impleme
      * 首页获取推荐店铺
      */
     @Override
-    public List<ShopListVo> getRecommendShops() {
+    public List<ShopListVo> getRecommendShops(CommentPageDto dto) {
         QueryWrapper<Shops> shopsQueryWrapper = new QueryWrapper<>();
         shopsQueryWrapper.lambda()
                 .eq(Shops::getIsAudit, AuditEnum.AUDIT_SUCCESS.getCode())
                 .orderByDesc(Shops::getMark);
 
-        Page<Shops> page = new Page<>(1, 15);
+        Page<Shops> page = new Page<>(dto.getPage(), 15);
         Page<Shops> resultPage = shopsMapper.selectPage(page, shopsQueryWrapper);
         List<Shops> records = resultPage.getRecords();
         List<ShopListVo> shopListVos = new ArrayList<>();

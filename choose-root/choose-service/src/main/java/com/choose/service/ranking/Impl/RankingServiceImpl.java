@@ -1,6 +1,5 @@
 package com.choose.service.ranking.Impl;
 
-import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -20,9 +19,10 @@ import com.choose.ranking.pojos.Column;
 import com.choose.ranking.pojos.Ranking;
 import com.choose.ranking.vo.RankingVo;
 import com.choose.redis.utils.RedisUtils;
+import com.choose.service.aiModel.DeepSeekV3Service;
+import com.choose.service.aiModel.ModelServiceFactory;
 import com.choose.service.dishes.DishesService;
 import com.choose.service.ranking.RankingService;
-import com.choose.service.textAbstract.TestTextAbstract;
 import com.choose.user.pojos.Review;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -72,6 +72,9 @@ public class RankingServiceImpl extends ServiceImpl<RankingMapper, Ranking> impl
 
     @Resource
     private ReviewMapper reviewMapper;
+
+    @Resource
+    private ModelServiceFactory modelServiceFactory;
 
 
     /**
@@ -259,7 +262,8 @@ public class RankingServiceImpl extends ServiceImpl<RankingMapper, Ranking> impl
             }
             double score = 0;
             try {
-                score = MathUtils.score(average, TestTextAbstract.reviewRating(ArrayUtil.toString(reviewArray)));
+                // score = MathUtils.score(average, TestTextAbstract.reviewRating(ArrayUtil.toString(reviewArray)));
+                score = MathUtils.score(average, (Double) modelServiceFactory.getService("deepSeekV3").process(DeepSeekV3Service.functionName.REVIEW_RATING));
             } catch (Exception e) {
                 throw new CustomException(AppHttpCodeEnum.SERVER_ERROR);
             }
