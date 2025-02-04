@@ -46,7 +46,6 @@ public class FoodCrawlerService {
         if (htmlContent != null) {
             insertFoodData(parseHtml(htmlContent));
         }
-        // return new ArrayList<>();
     }
 
     /**
