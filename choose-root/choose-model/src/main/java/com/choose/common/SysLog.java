@@ -75,6 +75,11 @@ public class SysLog {
     private String remark;
 
     /**
+     * 日志级别 info warn error
+     */
+    private String logLevel;
+
+    /**
      * 创建日期
      */
     private Date createDate;

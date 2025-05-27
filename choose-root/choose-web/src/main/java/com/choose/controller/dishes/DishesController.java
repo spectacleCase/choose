@@ -1,5 +1,6 @@
 package com.choose.controller.dishes;
 
+import com.choose.common.dto.CommentPageDto;
 import com.choose.dishes.dto.*;
 import com.choose.service.dishes.DishesService;
 import com.choose.service.ranking.MarkService;
@@ -67,8 +68,8 @@ public class DishesController {
     }
 
     @PostMapping("/v1/getRecommendShops")
-    public Result getRecommendShops() {
-        return Result.ok(dishesService.getRecommendShops());
+    public Result getRecommendShops(@Valid @RequestBody CommentPageDto dto) {
+        return Result.ok(dishesService.getRecommendShops(dto));
     }
 
     @PostMapping("/v1/getShopDetails")

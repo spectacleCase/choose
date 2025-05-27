@@ -26,11 +26,8 @@ public interface RecommendService {
     /**
      * 生产版推荐菜品
      */
-    public List<RecommendVo> recommendPlus(int num);
+    List<RecommendVo> recommendMinus(RecommendDto dto);
 
-    /**
-     * 生产版推荐菜品
-     */
-    public List<RecommendVo> recommendMinus(RecommendDto dto);
+    void recommendSuccess(String id);
 
 }

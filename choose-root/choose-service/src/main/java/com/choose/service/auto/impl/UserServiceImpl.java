@@ -19,7 +19,7 @@ import com.choose.redis.utils.RedisUtils;
 import com.choose.service.auto.UserService;
 import com.choose.service.tag.TagAssociationService;
 import com.choose.service.tag.TagService;
-import com.choose.string.StringUtils;
+import com.choose.stringPlus.StringPlusUtils;
 import com.choose.tag.dto.TagAssociationDto;
 import com.choose.tag.pojos.Tag;
 import com.choose.tag.pojos.TagAssociation;
@@ -30,7 +30,6 @@ import com.choose.user.pojos.User;
 import com.choose.user.pojos.UserInfo;
 import com.choose.user.vo.UserInfoVo;
 import com.choose.user.vo.UserVo;
-import com.choose.weChat.WeChatUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +37,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import javax.validation.constraints.NotBlank;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -91,7 +89,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         UserInfoVo userInfoVo = new UserInfoVo();
         UserInfo userInfo = new UserInfo();
-        SessionKeyAndOpenId weChatAccessTokenResponse = WeChatUtils.getWeChatAccessTokenResponse(appid, secret, dto.getCode());
+        SessionKeyAndOpenId weChatAccessTokenResponse = WeChatService.getWeChatAccessTokenResponse(appid, secret, dto.getCode());
         User user = userMapper.selectOne(Wrappers.<User>lambdaQuery()
                 .eq(User::getOpenid, weChatAccessTokenResponse.getOpenId()));
         if (Objects.isNull(user)) {
@@ -100,7 +98,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setSessionKey(weChatAccessTokenResponse.getSessionKey());
             user.setStatus(1);
             user.setAvatar(defImage);
-            String nickName = CommonConstants.StrName.NICKNAME + StringUtils.generateRandomString();
+            String nickName = CommonConstants.StrName.NICKNAME + StringPlusUtils.generateRandomString();
             user.setNickname(nickName);
             user.setLastLogin(new Date());
             userMapper.insert(user);
@@ -343,7 +341,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = userMapper.selectById(id);
         String code = "";
         try {
-            code = StringUtils.crateQRCodeImg("png", json, 400, 400, FileConstant.COS_HOST + user.getAvatar());
+            code = StringPlusUtils.crateQRCodeImg("png", json, 400, 400, FileConstant.COS_HOST + user.getAvatar());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -1,6 +1,6 @@
 package com.choose.admin.commen;
 
-import com.choose.string.StringUtils;
+import com.choose.stringPlus.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
@@ -88,7 +88,7 @@ public class IpUtils
      */
     private static boolean internalIp(byte[] addr)
     {
-        if (StringUtils.isNull(addr) || addr.length < 2)
+        if (StringPlusUtils.isNull(addr) || addr.length < 2)
         {
             return true;
         }
@@ -266,7 +266,7 @@ public class IpUtils
                 }
             }
         }
-        return StringUtils.substring(ip, 0, 255);
+        return StringPlusUtils.substring(ip, 0, 255);
     }
 
     /**
@@ -277,7 +277,7 @@ public class IpUtils
      */
     public static boolean isUnknown(String checkString)
     {
-        return StringUtils.isBlank(checkString) || "unknown".equalsIgnoreCase(checkString);
+        return StringPlusUtils.isBlank(checkString) || "unknown".equalsIgnoreCase(checkString);
     }
 
     /**
@@ -285,7 +285,7 @@ public class IpUtils
      */
     public static boolean isIP(String ip)
     {
-        return StringUtils.isNotBlank(ip) && ip.matches(REGX_IP);
+        return StringPlusUtils.isNotBlank(ip) && ip.matches(REGX_IP);
     }
 
     /**
@@ -293,7 +293,7 @@ public class IpUtils
      */
     public static boolean isIpWildCard(String ip)
     {
-        return StringUtils.isNotBlank(ip) && ip.matches(REGX_IP_WILDCARD);
+        return StringPlusUtils.isNotBlank(ip) && ip.matches(REGX_IP_WILDCARD);
     }
 
     /**
@@ -320,7 +320,7 @@ public class IpUtils
      */
     public static boolean isIPSegment(String ipSeg)
     {
-        return StringUtils.isNotBlank(ipSeg) && ipSeg.matches(REGX_IP_SEG);
+        return StringPlusUtils.isNotBlank(ipSeg) && ipSeg.matches(REGX_IP_SEG);
     }
 
     /**
@@ -357,7 +357,7 @@ public class IpUtils
      */
     public static boolean isMatchedIp(String filter, String ip)
     {
-        if (StringUtils.isEmpty(filter) || StringUtils.isEmpty(ip))
+        if (StringPlusUtils.isEmpty(filter) || StringPlusUtils.isEmpty(ip))
         {
             return false;
         }

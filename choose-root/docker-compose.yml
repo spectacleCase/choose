@@ -1,0 +1,68 @@
+version: '3'
+services:
+  loki:
+    image: grafana/loki:latest
+    user: root
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:latest
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yml
+      - ./logs:/var/log
+    command: -config.file=/etc/promtail/config.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+  app:
+    image: 'choose-app' # 替换为你的Spring Boot应用镜像
+    ports:
+      - "12150:12150"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/choose?serverTimezone=UTC&useSSL=false&characterEncoding=utf8
+      SPRING_REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+
+  db:
+    image: 'mysql:5.7.16'
+    environment:
+      MYSQL_ROOT_PASSWORD: 'choose1125_' # 使用实际的数据库密码替换
+      MYSQL_DATABASE: 'choose'
+    volumes:
+      - db_data:/var/lib/mysql
+
+  redis:
+    image: 'redis:latest'
+
+  rabbitmq:
+    image: 'rabbitmq:latest' # 包含管理插件的版本
+    ports:
+      - "15672:15672" # Web管理界面端口
+      - "5672:5672" # RabbitMQ AMQP端口
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  grafana-storage:
+  db_data:
+  rabbitmq_data:  # 添加了这个定义

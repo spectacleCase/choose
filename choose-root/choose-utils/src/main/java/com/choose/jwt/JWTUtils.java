@@ -1,4 +1,4 @@
-package com.choose.utils.jwt;
+package com.choose.jwt;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;

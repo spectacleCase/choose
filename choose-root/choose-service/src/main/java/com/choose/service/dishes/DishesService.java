@@ -1,6 +1,7 @@
 package com.choose.service.dishes;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.choose.common.dto.CommentPageDto;
 import com.choose.dishes.dto.AddDishesDto;
 import com.choose.dishes.dto.AddShopDto;
 import com.choose.dishes.dto.DishesDetailsDto;
@@ -55,7 +56,7 @@ public interface DishesService extends IService<Dishes> {
      * 首页获取推荐店铺
      *
      */
-    List<ShopListVo> getRecommendShops();
+    List<ShopListVo> getRecommendShops(CommentPageDto dto);
 
     /**
      * 根据id店铺的详情

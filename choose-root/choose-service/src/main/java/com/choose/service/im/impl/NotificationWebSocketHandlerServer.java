@@ -1,6 +1,5 @@
 package com.choose.service.im.impl;
 
-import com.choose.enums.ChatEnum;
 import com.choose.im.pojos.ChatMessage;
 import com.choose.im.pojos.ImMessage;
 import com.choose.mapper.ChatMapper;
@@ -75,6 +74,7 @@ public class NotificationWebSocketHandlerServer extends TextWebSocketHandler {
             chatMessage.setIsRead(0);
             // }
             chatMapper.insert(chatMessage);
+            // service -> common
             if (receiverSession != null && receiverSession.isOpen()) {
                 receiverSession.sendMessage(message);
             }

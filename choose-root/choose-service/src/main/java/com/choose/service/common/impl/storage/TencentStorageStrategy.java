@@ -1,9 +1,9 @@
 package com.choose.service.common.impl.storage;
 
+import com.choose.common.CommonUtils;
 import com.choose.common.vo.UploadVo;
 import com.choose.constant.FileConstant;
 import com.choose.service.common.StorageStrategy;
-import com.choose.utils.common.CommonUtils;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;

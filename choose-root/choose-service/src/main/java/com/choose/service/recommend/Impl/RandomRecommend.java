@@ -30,8 +30,8 @@ public class RandomRecommend extends RecommendationStrategy {
     @Override
     public List<RecommendVo> recommendItems(String targetUserId, int k) {
         ArrayList<RecommendVo> recommendVos = new ArrayList<>();
+        List<Dishes> dishesList = super.dishesMapper.selectList(null);
         for (int i = 0; i < k; i++) {
-            List<Dishes> dishesList = super.dishesMapper.selectList(null);
             int randomNumber = new Random().nextInt(dishesList.size()) + 1;
             log.info("随机数: {}", randomNumber);
             Recommend recommend = new Recommend();
@@ -43,6 +43,7 @@ public class RandomRecommend extends RecommendationStrategy {
             Dishes dishes = dishesList.get(randomNumber);
             BeanUtils.copyProperties(dishes, recommendVo);
             BeanUtils.copyProperties(recommend, recommendVo);
+            recommendVo.setId(String.valueOf(recommend.getId()));
             recommendVo.setShopId(String.valueOf(dishes.getShop()));
             Shops shops = shopsMapper.selectById(dishes.getShop());
             recommendVo.setShopName(shops.getShopName());
