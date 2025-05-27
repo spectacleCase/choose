@@ -1,4 +1,4 @@
-package com.choose.string;
+package com.choose.stringPlus;
 
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
@@ -11,6 +11,8 @@ import net.sourceforge.pinyin4j.PinyinHelper;
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
 import javax.imageio.ImageIO;
@@ -31,7 +33,8 @@ import java.util.*;
  *
  * @author 桌角的眼镜
  */
-public class StringUtils extends org.apache.commons.lang3.StringUtils {
+@Component
+public class StringPlusUtils extends StringUtils {
     /**
      * 空字符串
      */
@@ -76,7 +79,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
      */
     public static String crateQRCode(String content, int width, int height) throws IOException {
         String resultImage = "";
-        if (!StringUtils.isEmpty(content)) {
+        if (!StringPlusUtils.isEmpty(content)) {
             ServletOutputStream stream = null;
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             @SuppressWarnings("rawtypes")
@@ -523,7 +526,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
      */
 //    public static boolean ishttp(String link)
 //    {
-//        return StringUtils.startsWithAny(link, Constants.HTTP, Constants.HTTPS);
+//        return StringPlusUtils.startsWithAny(link, Constants.HTTP, Constants.HTTPS);
 //    }
 
     /**

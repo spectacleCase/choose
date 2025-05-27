@@ -10,7 +10,8 @@ target/
 .idea/libraries/
 .idea
 .out/
-choose-root/file/images/
+
+choose-root/file
 choose-root/choose-admin/src/main/resources/application-dev.yaml
 *.iws
 *.iml

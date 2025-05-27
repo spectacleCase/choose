@@ -19,7 +19,7 @@ import com.choose.redis.utils.RedisUtils;
 import com.choose.service.auto.UserService;
 import com.choose.service.tag.TagAssociationService;
 import com.choose.service.tag.TagService;
-import com.choose.string.StringUtils;
+import com.choose.stringPlus.StringPlusUtils;
 import com.choose.tag.dto.TagAssociationDto;
 import com.choose.tag.pojos.Tag;
 import com.choose.tag.pojos.TagAssociation;
@@ -98,7 +98,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setSessionKey(weChatAccessTokenResponse.getSessionKey());
             user.setStatus(1);
             user.setAvatar(defImage);
-            String nickName = CommonConstants.StrName.NICKNAME + StringUtils.generateRandomString();
+            String nickName = CommonConstants.StrName.NICKNAME + StringPlusUtils.generateRandomString();
             user.setNickname(nickName);
             user.setLastLogin(new Date());
             userMapper.insert(user);
@@ -341,7 +341,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = userMapper.selectById(id);
         String code = "";
         try {
-            code = StringUtils.crateQRCodeImg("png", json, 400, 400, FileConstant.COS_HOST + user.getAvatar());
+            code = StringPlusUtils.crateQRCodeImg("png", json, 400, 400, FileConstant.COS_HOST + user.getAvatar());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

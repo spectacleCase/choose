@@ -19,7 +19,7 @@ import com.choose.mapper.ChatMapper;
 import com.choose.mapper.FriendMapper;
 import com.choose.mapper.UserMapper;
 import com.choose.service.im.FriendService;
-import com.choose.string.StringUtils;
+import com.choose.stringPlus.StringPlusUtils;
 import com.choose.user.pojos.User;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -158,15 +158,15 @@ public class FriendServiceImpl implements FriendService {
      */
     @Override
     public List<SelectFriendVo> selectFriend(SelectFriendDto selectFriendDto) {
-        if (StringUtils.isEmpty(selectFriendDto.id()) && StringUtils.isEmpty(selectFriendDto.nickname())) {
+        if (StringPlusUtils.isEmpty(selectFriendDto.id()) && StringPlusUtils.isEmpty(selectFriendDto.nickname())) {
             throw new CustomException(AppHttpCodeEnum.PARAM_REQUIRE);
         }
         LambdaQueryWrapper<User> r = new LambdaQueryWrapper<>();
         r.ne(User::getId, UserLocalThread.getUser().getId());
         ArrayList<SelectFriendVo> selectFriendVos = new ArrayList<>();
-        if (!StringUtils.isEmpty(selectFriendDto.nickname())) {
+        if (!StringPlusUtils.isEmpty(selectFriendDto.nickname())) {
             r.like(User::getNickname, selectFriendDto.nickname());
-        } else if (!StringUtils.isEmpty(selectFriendDto.id())) {
+        } else if (!StringPlusUtils.isEmpty(selectFriendDto.id())) {
             r.eq(User::getId, selectFriendDto.id());
         }
         List<User> users = userMapper.selectList(r);
@@ -340,7 +340,7 @@ public class FriendServiceImpl implements FriendService {
         }
         List<User> users = userMapper.selectBatchIds(ids);
         users.forEach(u -> {
-            String s = StringUtils.capitalizeFirstLetterOfPinyin(u.getNickname());
+            String s = StringPlusUtils.capitalizeFirstLetterOfPinyin(u.getNickname());
             if (!stringListHashMap.containsKey(s)) {
                 stringListHashMap.putIfAbsent(s, new ArrayList<>());
             }
