@@ -1,97 +1,50 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- 彩色控制台控制 -->
-    <substitutionProperty name="log.pattern" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) ${PID:-} %clr(---){faint} %clr(%-80.80logger{79}){cyan} %clr(:){faint} %m%n%wEx"/>
-    <substitutionProperty name="log.pattern.no" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) ${PID:-} %clr(---){faint} %clr(%-80.80logger{79}){cyan} %clr(:){faint} %m%n%wEx"/>
-    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
-    <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
-    <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+    <!-- 用来定义变量，name 就是属性，value 就是值，可以在需要的地方引入 name，实现复用 -->
+    <!-- Ps: 这里实际上就是在配置日志文文件输出的位置 -->
+    <property name="LOG_HOME" value="./choose-root/logs"/>
 
-    <springProperty scope="context" name="LOG_FILE_DIR" source="logback.log-file-dir" defaultValue="log"/>
 
-    <!-- 控制台输出 -->
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${log.pattern}</pattern>
+    <!-- 引入spirng boot默认的logback配置文件(主要用他来输出彩色的控制台) -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!--
+        appender用来格式化日志输出节点，有俩个属性name和class，class用来指定哪种输出策略，
+        常用就是控制台输出策略和文件输出策略。
+     -->
+    <!-- Console 输出设置 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+            <!--            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+            <charset>utf8</charset>
+            <!--默认格式输出: 使用彩色面板-->
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <springProperty scope="context" name="url" source="loki.url" defaultValue="http://localhost:3100/loki/api/v1/push"/>
-    <springProperty scope="context" name="env" source="loki.label.env" defaultValue="dev"/>
-    <springProperty scope="context" name="jobName" source="loki.label.job-name" defaultValue="my-app"/>
-    <springProperty scope="context" name="hostIp" source="loki.label.host-ip" defaultValue="localhost"/>
-    <springProperty scope="context" name="orgId" source="loki.org-id" defaultValue="default-org"/>
-
-    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
-        <http class="com.github.loki4j.logback.ApacheHttpSender">
-            <url>${url}</url>
-            <tenantId>${orgId}</tenantId>
-        </http>
-        <format>
-            <label>
-                <pattern>application=${jobName},env=${env},host=${hostIp},level=%level</pattern>
-            </label>
-            <message>
-                <pattern>
-                    {"timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "level": "%level", "logger": "%logger{36}", "thread": "%thread", "message": "%msg%n"}
-                </pattern>
-            </message>
-            <sortByTime>true</sortByTime>
-        </format>
-    </appender>
-
-    <!-- 使用异步方式将日志推送至Loki -->
-    <appender name="ASYNC_LOKI" class="ch.qos.logback.classic.AsyncAppender">
-        <!-- 队列大小设置，根据实际需要调整 -->
-        <queueSize>512</queueSize>
-        <!-- 丢弃策略，当队列满时采取的操作 -->
-        <discardingThreshold>0</discardingThreshold>
-        <neverBlock>true</neverBlock>
-        <!-- 实际的Loki Appender -->
-        <appender-ref ref="LOKI" />
-    </appender>
-
-    <appender name="fileInfoLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>ERROR</level>
-            <onMatch>DENY</onMatch>
-            <onMismatch>ACCEPT</onMismatch>
-        </filter>
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${log.pattern.no}</pattern>
-        </encoder>
-        <!--滚动策略-->
+    <!-- 按照每天生成日志文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!--路径-->
-            <fileNamePattern>${LOG_FILE_DIR}/info.%d.log</fileNamePattern>
-            <!--保留30天日志-->
-            <maxHistory>30</maxHistory>
+            <!--日志文件输出的文件名和位置: 可以使用相对路径或者绝对路径，如果是相对路径，会直接在当前项目根目录下生成-->
+            <fileNamePattern>${LOG_HOME}/readJson.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!--只保留最近90天的日志-->
+            <maxHistory>90</maxHistory>
+            <!--用来指定日志文件的上限大小，那么到了这个值，就会删除旧的日志-->
+            <!--            <totalSizeCap>1GB</totalSizeCap>-->
         </rollingPolicy>
-    </appender>
-
-    <appender name="fileErrorLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>ERROR</level>
-        </filter>
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${log.pattern.no}</pattern>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
-        <!--滚动策略-->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!--路径-->
-            <fileNamePattern>${LOG_FILE_DIR}/error.%d.log</fileNamePattern>
-            <!--保留30天日志-->
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
     </appender>
 
-    <root level="info">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="fileInfoLog" />
-        <appender-ref ref="fileErrorLog" />
-        <appender-ref ref="ASYNC_LOKI" />
+    <!--
+         root 标签是必须存在的，并且必须放在最后配置. 用来指定最基础的日志输出级别，只有一个level属性(级别最低是 info，否则报错)
+         可以包含零个或多个元素，appender-ref 就是在声明需要使用到哪些自定义配置，最后添加到这个logger。
+     -->
+    <root level="INFO">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE"/>
     </root>
 
 </configuration>
-
