@@ -2,6 +2,7 @@ package com.choose.service.aiModel;
 
 import com.choose.config.model.AiModelConfig;
 import com.choose.config.model.PromptConfig;
+import com.choose.constant.CommonConstants;
 import com.choose.enums.AppHttpCodeEnum;
 import com.choose.exception.CustomException;
 import com.choose.service.textAbstract.SseEmitterUTF8;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Random;
 
 /**
  * <p>
@@ -57,11 +59,31 @@ public class DeepSeekV3Service<T> implements ModelService<Object> {
 
     @Override
     public T process(String fun,String ...input) {
-        return switch (fun) {
-            case "getHealthTips" -> (T) getHealthTips().toString();
-            case "reviewRating" -> (T) reviewRating(input[0]);
-            default -> null;
-        };
+         switch (fun) {
+            case "getHealthTips" -> {
+                String health;
+                try{
+                    health = getHealthTips().toString();
+                }catch (Exception e) {
+                    health = CommonConstants.healthTips.health[new Random().nextInt(10)];
+                }
+
+                return (T) health;
+            }
+            case "reviewRating" -> {
+                Double v;
+                try{
+                    v = reviewRating(input[0]);
+                } catch (Exception e) {
+                    v = 0.0;
+                }
+
+                return (T) v;
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 
     /**

@@ -5,12 +5,17 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.JSONReader;
 import com.alibaba.fastjson2.JSONWriter;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -19,6 +24,9 @@ import java.util.*;
  */
 @Slf4j
 public class JsonUtil {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     public static String toJson(Object obj) {
         return JSON.toJSONString(obj);
     }
@@ -128,5 +136,41 @@ public class JsonUtil {
             fieldNames.add(field.getName());
         }
         return fieldNames;
+    }
+
+
+    /**
+     * JSON对象反序列化
+     */
+    public static <T> T fromJson(String json, Class<T> clazz) {
+        try {
+            JsonParser jp = getParser(json);
+            return jp.readValueAs(clazz);
+        } catch (JsonParseException jpe) {
+            log.error("反序列化失败", jpe);
+        } catch (JsonMappingException jme) {
+            log.error("反序列化失败", jme);
+        } catch (IOException ioe) {
+            log.error("反序列化失败", ioe);
+        }
+        return null;
+    }
+
+
+    /**
+     * 创建JSON处理器的静态方法
+     *
+     * @param content JSON字符串
+     * @return
+     */
+    private static JsonParser getParser(String content) {
+        if (StringUtils.isNotBlank(content)) {
+            try {
+                return objectMapper.getFactory().createParser(content);
+            } catch (IOException ioe) {
+                log.error("JsonUtil getParser error", ioe);
+            }
+        }
+        return null;
     }
 }
