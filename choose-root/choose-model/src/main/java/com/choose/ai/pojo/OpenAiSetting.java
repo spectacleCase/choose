@@ -1,8 +1,8 @@
 package com.choose.ai.pojo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * <p>

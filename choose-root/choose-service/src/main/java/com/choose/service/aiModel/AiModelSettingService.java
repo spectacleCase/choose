@@ -41,7 +41,7 @@ public class AiModelSettingService {
         initLLMService(AiConstants.ModelPlatform.DASHSCOPE, DashScopeLLMService::new);
 
         //deepseek
-        // initLLMService();
+        initLLMService(AiConstants.ModelPlatform.DEEPSEEK, DeepSeekLLMService::new);
 
         //其他模型...
 
