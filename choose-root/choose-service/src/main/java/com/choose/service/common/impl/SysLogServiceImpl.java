@@ -17,6 +17,8 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,7 +39,7 @@ import java.util.concurrent.Executors;
  */
 @Service
 @Slf4j
-public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> implements SysLogService , ApplicationListener<ContextClosedEvent> {
+public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> implements SysLogService  {
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -71,6 +73,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     }
 
     @Override
+    @PostConstruct
     public void writeLog() {
         executorService.submit(() -> {
             log.info("执行写入日志");
@@ -93,8 +96,9 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         });
     }
 
-    @Override
-    public void onApplicationEvent(@NotNull ContextClosedEvent event) {
+    // @Override
+    @PreDestroy
+    public void close() {
         log.info("Spring Boot 服务关闭...");
         log.info("写入全部日志...");
         // int num = LogQueueConsumer.getQueueSize();

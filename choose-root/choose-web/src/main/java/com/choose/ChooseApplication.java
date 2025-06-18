@@ -24,8 +24,6 @@ import javax.annotation.Resource;
 @EnableAspectJAutoProxy(exposeProxy = true)
 public class ChooseApplication implements CommandLineRunner {
 
-    @Resource
-    private SysLogService sysLogService;
 
     public static void main(String[] args) {
         SpringApplication.run(ChooseApplication.class, args);
@@ -33,6 +31,6 @@ public class ChooseApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-            sysLogService.writeLog();
+            // sysLogService.writeLog();
     }
 }
