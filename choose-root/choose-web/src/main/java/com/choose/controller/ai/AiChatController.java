@@ -66,11 +66,13 @@ public class AiChatController {
 
     @PostMapping(value = "/chat")
     public String chat(@RequestBody AskReq askReq) {
-        return conversationMessageService.sseAsk(askReq);
+        return conversationMessageService.chatAsk(askReq);
     }
 
     @PostMapping(value = "/stream/chat",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public String streamChat(@RequestBody AskReq askReq) {
+    public SseEmitter streamChat(@RequestBody AskReq askReq) {
+        SseEmitter sseEmitter = new SseEmitter();
+
         return conversationMessageService.sseAsk(askReq);
     }
 
