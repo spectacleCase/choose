@@ -23,6 +23,8 @@ import com.choose.mapper.UserMapper;
 import com.choose.service.comment.ShopCommentService;
 import com.choose.service.im.impl.NotificationWebSocketHandlerServer;
 import com.choose.user.pojos.UserInfo;
+import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import org.junit.Assert;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,9 +83,14 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
             if (!dto.imageUrl().isEmpty()) {
                 shopComment.setImageUrl(dto.imageUrl());
             }
-
-            shopComment.setContent(dto.content());
+            String content = dto.content();
+            if(SensitiveWordBs.newInstance().contains(content)) {
+                content = SensitiveWordBs.newInstance().replace(content);
+            }
+            shopComment.setContent(content);
             this.save(shopComment);
+
+            // 推送通知
             CommentNotifications commentNotifications = new CommentNotifications();
             commentNotifications.setCommentId(shopComment.getId());
             commentNotifications.setUserId(Long.valueOf(user.getId()));
@@ -96,10 +103,10 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
             }
 
             commentNotifications.setType(CommentEnum.COMMENT.getCode());
-            commentNotifications.setMessage(dto.content());
+            commentNotifications.setMessage(content);
             commentNotifications.setIsRead(CommentEnum.UNREAD.getCode());
             commentNotificationsMapper.insert(commentNotifications);
-            String message = "{\"messageType\":\"notify\",\"content\":\"" + dto.content() + "\"}";
+            String message = "{\"messageType\":\"notify\",\"content\":\"" + content + "\"}";
             if (result) {
                 notificationWebSocketHandlerServer.sendComment(Long.valueOf(dto.senderId()), message);
             }

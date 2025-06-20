@@ -160,6 +160,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!--sensitive-word 铭感词过滤-->
+        <dependency>
+            <groupId>com.github.houbb</groupId>
+            <artifactId>sensitive-word</artifactId>
+            <version>0.0.4</version>
+        </dependency>
+
+
         <!--腾讯云存储依赖-->
         <dependency>
             <groupId>com.qcloud</groupId>
