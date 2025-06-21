@@ -82,7 +82,6 @@ public class DishesServiceImpl extends ServiceImpl<DishesMapper, Dishes> impleme
      * 获取对应菜品的评论
      */
     @Override
-    @SysLog("获取菜品评论")
     public List<ReviewVo> getReview(DishesReviewDto dto) {
         Dishes dishes = dishesMapper.selectById(dto.getDishesId());
         if (Objects.nonNull(dishes)) {
@@ -129,7 +128,6 @@ public class DishesServiceImpl extends ServiceImpl<DishesMapper, Dishes> impleme
      * 评论菜品
      */
     @Override
-    @SysLog("评论菜品")
     public ReviewVo review(ReviewDto reviewDto) {
         UserInfo user = UserLocalThread.getUser();
         if (Objects.nonNull(user)) {
@@ -154,7 +152,6 @@ public class DishesServiceImpl extends ServiceImpl<DishesMapper, Dishes> impleme
      * 添加新的店铺
      */
     @Override
-    @SysLog("添加新店铺")
     public void addShop(AddShopDto dto) {
         QueryWrapper<Shops> shopsQueryWrapper = new QueryWrapper<>();
         shopsQueryWrapper.lambda().eq(Shops::getShopName, dto.getShopName());

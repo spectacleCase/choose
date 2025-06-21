@@ -1,9 +1,11 @@
 package com.choose.service.rabbitmq;
 
 import com.choose.apspect.bo.SysLogBO;
+import com.choose.comment.vo.CommentNotifMqVo;
 import com.choose.config.RabbitMQConfig;
 import com.choose.service.common.impl.FoodCrawlerService;
 import com.choose.service.common.impl.SysLogServiceImpl;
+import com.choose.service.im.impl.NotificationWebSocketHandlerServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -29,6 +31,9 @@ public class ConsumptionMessage {
     @Resource
     private FoodCrawlerService foodCrawlerService;
 
+    @Resource
+    private NotificationWebSocketHandlerServer notificationWebSocketHandlerServer;
+
     /**
      * 消费日志消息
      */
@@ -44,5 +49,15 @@ public class ConsumptionMessage {
     public void receiveLogMessage(String foodName) {
         log.info("开始消费{}", foodName);
         foodCrawlerService.fetchFoodData(foodName);
+    }
+
+    /**
+     * 消费通知信息
+     */
+    @RabbitListener(queues = RabbitMQConfig.COMMENT_NOTIF_QUEUE)
+    public void receiveLogMessage(CommentNotifMqVo commentNotifMqVo) {
+        log.info("开始消费通知userId:{}，message:{}", commentNotifMqVo.getUserId(), commentNotifMqVo.getMessage());
+        notificationWebSocketHandlerServer.sendComment(commentNotifMqVo.getUserId(),commentNotifMqVo.getMessage());
+
     }
 }

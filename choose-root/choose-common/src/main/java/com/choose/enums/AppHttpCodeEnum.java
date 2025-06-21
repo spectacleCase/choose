@@ -26,10 +26,10 @@ public enum AppHttpCodeEnum {
     SIG_TIMEOUT(101, "SIGN已过期"),
 
     // 参数错误 500~1000
-    PARAM_REQUIRE(500, "缺少参数"),
+    PARAM_REQUIRE(503, "缺少参数"),
     PARAM_INVALID(501, "无效参数"),
     PARAM_IMAGE_FORMAT_ERROR(502, "图片格式有误"),
-    SERVER_ERROR(503, "服务器内部错误"),
+    SERVER_ERROR(500, "服务器内部错误"),
 
     // 数据错误 1000~2000
     DATA_EXIST(1000, "数据已经存在"),

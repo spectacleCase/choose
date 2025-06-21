@@ -55,7 +55,6 @@ public class RecommendServiceImpl implements RecommendService {
      * 推荐记录
      */
     @Override
-    @SysLog("推荐记录")
     public List<RecommendListVo> recommendRecord(CommentPageDto dto) {
         UserInfo user = UserLocalThread.getUser();
         if (Objects.nonNull(user)) {
@@ -76,7 +75,6 @@ public class RecommendServiceImpl implements RecommendService {
      * @param dto - 推荐结果个数
      */
     @Override
-    @SysLog("推荐记录")
     public List<RecommendVo> recommendMinus(RecommendDto dto) {
         RecommenderSystem recommenderSystem = new RecommenderSystem();
         UserInfo user = UserLocalThread.getUser();

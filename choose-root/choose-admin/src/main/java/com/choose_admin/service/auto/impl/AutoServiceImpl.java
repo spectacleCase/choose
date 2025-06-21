@@ -51,7 +51,6 @@ public class AutoServiceImpl implements AutoService {
      * 管理员登录
      */
     @Override
-    @SysLog("管理员登录")
     public UserInfoVo login(User user) {
         Map<String, User> users = admins.getUsers();
         User admin = users.get(user.getUsername());

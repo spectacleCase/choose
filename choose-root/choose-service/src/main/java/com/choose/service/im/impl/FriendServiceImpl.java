@@ -3,6 +3,8 @@ package com.choose.service.im.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.choose.comment.vo.CommentNotifMqVo;
+import com.choose.config.RabbitMQConfig;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
 import com.choose.constant.FileConstant;
@@ -21,6 +23,7 @@ import com.choose.mapper.UserMapper;
 import com.choose.service.im.FriendService;
 import com.choose.stringPlus.StringPlusUtils;
 import com.choose.user.pojos.User;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -56,6 +59,9 @@ public class FriendServiceImpl implements FriendService {
     @Resource
     private ChatMapper chatMapper;
 
+    @Resource
+    private RabbitTemplate rabbitTemplate;
+
 
     @Override
     public String addFriend(FriendDto friendDto) {
@@ -77,7 +83,12 @@ public class FriendServiceImpl implements FriendService {
             // throw new CustomException(AppHttpCodeEnum.DATA_EXIST);
         }
         friendMapper.insert(friend);
-        ns.sendComment(Long.valueOf(friendDto.friendId()), "您有一条好友请求：（备注）" + friendDto.remark());
+        // ns.sendComment(Long.valueOf(friendDto.friendId()), "您有一条好友请求：（备注）" + friendDto.remark());
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.COMMENT_NOTIF_EXCHANGE,
+                RabbitMQConfig.COMMENT_NOTIF_KEY,
+                new CommentNotifMqVo(Long.valueOf(friendDto.friendId()), "您有一条好友请求：（备注）" + friendDto.remark())
+        );
         return "已请求好友添加";
     }
 

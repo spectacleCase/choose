@@ -182,7 +182,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 获取用户信息
      */
     @Override
-    @SysLog("获取用户信息")
     public UserInfo getUser(String id) {
         if (id == null || id.isEmpty()) {
             UserInfo user = UserLocalThread.getUser();
@@ -208,7 +207,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 修改用户信息
      */
     @Override
-    @SysLog("修改用户信息")
     public UserInfo setUser(UserVo userVo) {
         UserInfo userInfo = UserLocalThread.getUser();
         if (Objects.nonNull(userInfo)) {
@@ -265,7 +263,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 新用户添加标签属性
      */
     @Override
-    @SysLog("新用户添加标签属性")
     public void addendTag(TagAssociationDto vo) {
         UserInfo user = UserLocalThread.getUser();
         if (Objects.nonNull(user)) {
@@ -286,10 +283,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         throw new CustomException(AppHttpCodeEnum.NEED_LOGIN);
     }
 
-    /**
-     * 获取该用户的标签
-     */
-    @SysLog("获取该用户的标签")
+
     @Override
     public ArrayList<TagAssociationVo> getUserTag() {
         UserInfo user = UserLocalThread.getUser();

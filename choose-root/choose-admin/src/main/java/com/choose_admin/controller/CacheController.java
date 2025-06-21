@@ -29,7 +29,6 @@ public class CacheController {
     private RedisTemplate<String, String> redisTemplate;
 
     @PostMapping("/v1/get")
-    @SysLog("redis缓存监控")
     public Result getInfo() throws Exception
     {
         Properties info = (Properties) redisTemplate.execute((RedisCallback<Object>) RedisServerCommands::info);

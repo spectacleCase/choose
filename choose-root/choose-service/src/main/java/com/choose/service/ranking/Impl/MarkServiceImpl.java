@@ -40,7 +40,6 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
      * 给菜品评分
      */
     @Override
-    @SysLog("菜品评分")
     public Mark dishesMark(MarkDto dto) {
         UserInfo user = UserLocalThread.getUser();
         if (Objects.isNull(user)) {

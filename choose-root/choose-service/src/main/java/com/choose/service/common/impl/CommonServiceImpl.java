@@ -107,7 +107,6 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
      * 获取全部的标签
      */
     @Override
-    @SysLog("获取全部标签")
     public List<Tag> getTag() {
         // 将标签列表转换为Map，键是父级标签名称，值是该父级标签下的所有子标签列表
         return tagMapper.selectList(null);
@@ -157,7 +156,6 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
     }
 
     @Override
-    @SysLog("搜索")
     public List<SearchVo> search(String keyword) {
         if(Objects.isNull(keyword) || keyword.isEmpty()) {
             return new ArrayList<>();
@@ -194,7 +192,6 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
     }
 
     @Override
-    @SysLog("搜索词推荐")
     public List<String> searchTerms(String keyword) {
         if(Objects.isNull(keyword) || keyword.isEmpty()) {
             return new ArrayList<>();
@@ -219,7 +216,6 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
     }
 
     @Override
-    @SysLog("获取搜索历史列表")
     public List<String> getSearchHistory() {
         UserInfo user = UserLocalThread.getUser();
         if(Objects.nonNull(user)) {
@@ -239,7 +235,6 @@ public class CommonServiceImpl extends ServiceImpl<UserMapper, User> implements 
      * 删除全部搜索记录
      */
     @Override
-    @SysLog("删除全部搜索记录")
     public void delSearch() {
         UserInfo user = UserLocalThread.getUser();
         if(Objects.nonNull(user)) {

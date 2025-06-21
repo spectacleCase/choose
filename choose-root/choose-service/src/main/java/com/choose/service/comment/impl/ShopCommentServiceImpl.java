@@ -9,6 +9,7 @@ import com.choose.comment.pojos.CommentNotifications;
 import com.choose.comment.pojos.ShopComment;
 import com.choose.comment.vo.*;
 import com.choose.common.dto.CommentPageDto;
+import com.choose.config.RabbitMQConfig;
 import com.choose.config.UserLocalThread;
 import com.choose.constant.CommonConstants;
 import com.choose.constant.FileConstant;
@@ -24,7 +25,7 @@ import com.choose.service.comment.ShopCommentService;
 import com.choose.service.im.impl.NotificationWebSocketHandlerServer;
 import com.choose.user.pojos.UserInfo;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
-import org.junit.Assert;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +61,12 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
     @Resource
     private NotificationWebSocketHandlerServer notificationWebSocketHandlerServer;
 
+    @Resource
+    private RabbitTemplate rabbitTemplate;
+
+    @Resource
+    private SensitiveWordBs sensitiveWordBs;
+
 
     /**
      * 添加店铺评论
@@ -74,7 +81,7 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
             shopComment.setUserId(Long.valueOf(user.getId()));
             shopComment.setUserName(user.getNickname());
             shopComment.setUserAvatar(user.getAvatar());
-            if(!dto.topId().isEmpty()){
+            if (!dto.topId().isEmpty()) {
                 shopComment.setTopId(Long.valueOf(dto.topId()));
             }
             if (!dto.parentId().isEmpty()) {
@@ -83,9 +90,10 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
             if (!dto.imageUrl().isEmpty()) {
                 shopComment.setImageUrl(dto.imageUrl());
             }
+            // 过滤
             String content = dto.content();
-            if(SensitiveWordBs.newInstance().contains(content)) {
-                content = SensitiveWordBs.newInstance().replace(content);
+            if (sensitiveWordBs.contains(content)) {
+                content = sensitiveWordBs.replace(content);
             }
             shopComment.setContent(content);
             this.save(shopComment);
@@ -108,7 +116,12 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
             commentNotificationsMapper.insert(commentNotifications);
             String message = "{\"messageType\":\"notify\",\"content\":\"" + content + "\"}";
             if (result) {
-                notificationWebSocketHandlerServer.sendComment(Long.valueOf(dto.senderId()), message);
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfig.COMMENT_NOTIF_EXCHANGE,
+                        RabbitMQConfig.COMMENT_NOTIF_KEY,
+                        new CommentNotifMqVo(Long.valueOf(dto.senderId()), message)
+                );
+                // notificationWebSocketHandlerServer.sendComment(Long.valueOf(dto.senderId()), message);
             }
 
             return;
@@ -126,7 +139,7 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
         List<UserCommentVo> userCommentVos = commentNotificationsMapper
                 .selectUserCommentVoList(Long.valueOf(UserLocalThread.getUser().getId()), offset, CommonConstants.Common.PANE_SIZE);
         userCommentVos.forEach(com -> {
-            if(Objects.isNull(com.getTopId())) {
+            if (Objects.isNull(com.getTopId())) {
                 com.setTopId(com.getCommentId());
             }
             com.setUserAvatar(FileConstant.COS_HOST + com.getUserAvatar());
@@ -139,7 +152,6 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
      * 获取店铺的全部评论
      */
     @Override
-    @SysLog("获取帖子全部评论")
     public List<ShopCommentVo> getShopCommentList(ShopCommentDto dto) {
         Shops shops = shopsMapper.selectById(dto.shopId());
         if (Objects.nonNull(shops)) {
@@ -164,7 +176,6 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
      * 获取店铺的全部评论
      */
     @Override
-    @SysLog("获取帖子全部评论")
     public List<AllShopCommentVo> getShopAllCommentList(ShopCommentDto dto) {
         Shops shops = shopsMapper.selectById(dto.shopId());
         if (Objects.nonNull(shops)) {
@@ -185,7 +196,6 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
     }
 
     @Override
-    @SysLog("获取帖子全部评论")
     public ShopCommentDetailVo getShpCommentDetails(ShopCommentDetailDto dto) {
         ShopCommentDetailVo shopCommentDetailVo = shopCommentMapper.selectCommentDetailById(Long.valueOf(dto.commentId()));
         addUrl(shopCommentDetailVo);
@@ -238,7 +248,6 @@ public class ShopCommentServiceImpl extends ServiceImpl<ShopCommentMapper, ShopC
      * 获取最新的评论列表
      */
     @Override
-    @SysLog("获取最新的评论列表")
     public List<LatestCommentListVo> getLatestCommentList(CommentPageDto dto, Boolean sortByNums) {
         int offset = (dto.getPage() - 1) * CommonConstants.Common.PANE_SIZE;
         List<LatestCommentListVo> latestCommentList = shopCommentMapper.getLatestCommentList(offset, CommonConstants.Common.PANE_SIZE, sortByNums);

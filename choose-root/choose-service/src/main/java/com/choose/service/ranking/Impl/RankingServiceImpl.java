@@ -80,7 +80,6 @@ public class RankingServiceImpl extends ServiceImpl<RankingMapper, Ranking> impl
     /**
      * 获取栏目
      */
-    @SysLog("获取栏目")
     @Override
     public List<Column> getColumn() {
         return columnMapper.selectList(null);
@@ -90,7 +89,6 @@ public class RankingServiceImpl extends ServiceImpl<RankingMapper, Ranking> impl
      * 根据id获取排行榜
      */
     @Override
-    @SysLog("获取排行榜")
     public List<RankingVo> getRanking(RankingDto dto) {
         List<RankingVo> instance = getRedisRankingVos(dto);
         if (Objects.nonNull(instance)) {
