@@ -1,0 +1,48 @@
+package com.choose.service.agent;
+
+import com.choose.agent.dto.AgentRecommendDto;
+import com.choose.agent.vo.AgentRecommendVo;
+import com.choose.agent.vo.AgentTraceVo;
+import com.choose.config.UserLocalThread;
+import com.choose.service.agent.coordinator.AgentCoordinator;
+import com.choose.service.agent.core.AgentContext;
+import com.choose.service.agent.log.AgentCallLogService;
+import com.choose.user.pojos.UserInfo;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+/**
+ * Agent协作推荐对外服务门面。
+ */
+@Service
+@RequiredArgsConstructor
+public class AgentRecommendService {
+
+    private final AgentCoordinator coordinator;
+    private final AgentCallLogService logService;
+
+    public AgentRecommendVo recommend(AgentRecommendDto dto) {
+        String userId = null;
+        UserInfo u = UserLocalThread.getUser();
+        if (u != null && u.getId() != null) userId = String.valueOf(u.getId());
+
+        int topK = dto.getNum() == null || dto.getNum() <= 0 ? 5 : dto.getNum();
+        AgentContext ctx = coordinator.run(dto.getQuery(), userId, dto.getLocation(), topK);
+
+        AgentRecommendVo vo = new AgentRecommendVo();
+        vo.setTraceId(ctx.getTraceId());
+        vo.setConflictDetected(ctx.isConflictDetected());
+        vo.setClarifyQuestion(ctx.getClarifyQuestion());
+        vo.setParsedIntent(ctx.getParsedIntent());
+        vo.setItems(ctx.getFinalRecommendations());
+        vo.setAgentLatency(ctx.getAgentLatency());
+        return vo;
+    }
+
+    public AgentTraceVo getTrace(String traceId) {
+        AgentTraceVo vo = new AgentTraceVo();
+        vo.setTraceId(traceId);
+        vo.setCalls(logService.listByTrace(traceId));
+        return vo;
+    }
+}

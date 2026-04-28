@@ -6,6 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import javax.annotation.Resource;
@@ -21,6 +22,7 @@ import javax.annotation.Resource;
  */
 @SpringBootApplication(scanBasePackages = {"com.choose", "com.choose_admin", "com.choose_ai"})
 @EnableScheduling // 开启调度任务1
+@EnableAsync
 @EnableAspectJAutoProxy(exposeProxy = true)
 public class ChooseApplication implements CommandLineRunner {
 
