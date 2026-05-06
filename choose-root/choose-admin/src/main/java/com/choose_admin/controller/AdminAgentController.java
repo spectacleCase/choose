@@ -60,7 +60,7 @@ public class AdminAgentController {
     private final ToolCallLogService toolCallLogService;
     private final TwoLevelCache twoLevelCache;
 
-    // ============================== 演练台 ==============================
+    // ============================== 推荐入口 (供管理端测试 / 内部调用) ===========
     @PostMapping("/recommend")
     public Result recommend(@Valid @RequestBody AgentRecommendDto dto) {
         return Result.ok(agentRecommendService.recommend(dto));
