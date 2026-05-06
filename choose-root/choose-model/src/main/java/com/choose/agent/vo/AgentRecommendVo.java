@@ -35,4 +35,10 @@ public class AgentRecommendVo {
 
     /** P-ReAct 累计节省的端到端耗时 ms (论文 2.2.4) */
     private long pReActSavedMs;
+
+    /** 是否被 PromptGuard 拦截 (论文 2.1.3 三层防护) */
+    private boolean blocked;
+
+    /** 友好拒绝文案,blocked=true 时填充 */
+    private String blockReason;
 }

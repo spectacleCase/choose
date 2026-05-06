@@ -82,6 +82,13 @@ public class AgentCoordinator {
         // 1. 意图解析
         AgentResult ir = intentParseAgent.execute(ctx, userQuery);
         logService.recordAsync(ctx.getTraceId(), userId, userQuery, ir);
+        // PromptGuard 拦截优先级最高,直接返回友好拒绝,不走降级
+        if (ir.isBlocked()) {
+            log.warn("[trace={}] input blocked by PromptGuard", ctx.getTraceId());
+            ctx.setBlocked(true);
+            ctx.setBlockReason(ir.getErrorMessage());
+            return ctx;
+        }
         if (!ir.isSuccess()) {
             log.warn("[trace={}] intent parse failed, fallback", ctx.getTraceId());
             applyFallback(ctx);

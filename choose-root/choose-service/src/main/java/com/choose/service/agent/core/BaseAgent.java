@@ -3,6 +3,8 @@ package com.choose.service.agent.core;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.choose.service.agent.log.ToolCallLogService;
+import com.choose.service.agent.prompt.PromptTemplates;
+import com.choose.service.agent.security.PromptGuard;
 import com.choose.service.agent.tool.Tool;
 import com.choose.service.agent.tool.ToolRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,9 @@ public abstract class BaseAgent {
     @Autowired
     protected ToolCallLogService toolCallLogService;
 
+    @Autowired
+    protected PromptGuard promptGuard;
+
     /** P-ReAct 并行池: 同时跑工具调用 + 预备推理 LLM 调用 */
     private static final ExecutorService P_REACT_POOL = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "p-react-" + System.nanoTime());
@@ -68,7 +73,23 @@ public abstract class BaseAgent {
         long start = System.currentTimeMillis();
         List<ReActStep> steps = new ArrayList<>();
 
-        String systemPrompt = systemPromptHeader() + "\n\n"
+        // === 论文 2.1.3 三层防护之输入侧: PromptGuard 关键字过滤 ===
+        PromptGuard.InspectResult guard = promptGuard.inspect(userInput);
+        if (guard.getVerdict() == PromptGuard.Verdict.BLOCK) {
+            steps.add(ReActStep.of(ReActStep.Type.OBSERVATION,
+                    "PromptGuard 拦截: " + String.join(",", guard.getHits()),
+                    System.currentTimeMillis() - start));
+            log.warn("[{}] input blocked by PromptGuard: {}", name(), guard.getHits());
+            ctx.addTrace(name(), steps);
+            ctx.getAgentLatency().put(name(), System.currentTimeMillis() - start);
+            return AgentResult.blocked(name(), guard.getRejectReason(), steps,
+                    System.currentTimeMillis() - start);
+        }
+        String safeInput = guard.getSanitizedText();
+
+        // 红线段拼到系统提示最前面
+        String systemPrompt = PromptTemplates.SECURITY_RAILS + "\n\n"
+                + systemPromptHeader() + "\n\n"
                 + "你可以使用以下工具:\n"
                 + toolRegistry.renderToolsDescription(allowedTools())
                 + "\n# 输出格式 (严格 JSON,无任何额外文字)\n"
@@ -81,7 +102,7 @@ public abstract class BaseAgent {
                 + "或者基于当前已有的信息做一些不依赖本次工具结果的预备推理。简短(<= 60 字)。\n";
 
         StringBuilder convo = new StringBuilder();
-        convo.append("用户输入: ").append(userInput).append("\n");
+        convo.append("用户输入: ").append(safeInput).append("\n");
 
         Object finalAnswer = null;
         String errMsg = null;

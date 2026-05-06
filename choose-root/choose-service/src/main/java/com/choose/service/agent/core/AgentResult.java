@@ -21,12 +21,19 @@ public class AgentResult {
     private String errorMessage;
     private List<ReActStep> steps = new ArrayList<>();
     private long elapsedMs;
+    /** 是否被 PromptGuard 拦截 (论文 2.1.3 三层防护中的输入侧) */
+    private boolean blocked;
 
     public static AgentResult ok(String agentName, Object data, List<ReActStep> steps, long elapsedMs) {
-        return new AgentResult(true, agentName, data, null, steps, elapsedMs);
+        return new AgentResult(true, agentName, data, null, steps, elapsedMs, false);
     }
 
     public static AgentResult fail(String agentName, String error, List<ReActStep> steps, long elapsedMs) {
-        return new AgentResult(false, agentName, null, error, steps, elapsedMs);
+        return new AgentResult(false, agentName, null, error, steps, elapsedMs, false);
+    }
+
+    public static AgentResult blocked(String agentName, String reason, List<ReActStep> steps, long elapsedMs) {
+        AgentResult r = new AgentResult(false, agentName, null, reason, steps, elapsedMs, true);
+        return r;
     }
 }

@@ -65,6 +65,11 @@ public class AgentContext {
      *  对每次启用了 P-ReAct 的工具调用, savedMs += (tool_ms + pre_thought_ms) - max(tool_ms, pre_thought_ms) */
     private long pReActSavedMs = 0;
 
+    /** 是否被 PromptGuard 拦截 (论文 2.1.3) */
+    private boolean blocked;
+    /** 拦截原因,blocked=true 时填充 */
+    private String blockReason;
+
     public void addTrace(String agentName, List<ReActStep> steps) {
         agentTraces.put(agentName, steps);
     }

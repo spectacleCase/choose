@@ -39,6 +39,8 @@ public class AgentRecommendService {
         vo.setAgentLatency(ctx.getAgentLatency());
         vo.setAsyncNutritionPending(async);
         vo.setPReActSavedMs(ctx.getPReActSavedMs());
+        vo.setBlocked(ctx.isBlocked());
+        vo.setBlockReason(ctx.getBlockReason());
         return vo;
     }
 
