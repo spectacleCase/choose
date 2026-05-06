@@ -3,9 +3,13 @@ package com.choose.controller.agent;
 import com.choose.agent.dto.AgentRecommendDto;
 import com.choose.agent.dto.TagSuggestDto;
 import com.choose.agent.pojos.AgentCallLog;
+import com.choose.agent.pojos.RecommendFeedback;
+import com.choose.config.UserLocalThread;
 import com.choose.service.agent.AgentRecommendService;
+import com.choose.service.agent.feedback.RecommendFeedbackService;
 import com.choose.service.agent.log.AgentCallLogService;
 import com.choose.service.agent.tag.TagSuggestService;
+import com.choose.user.pojos.UserInfo;
 import com.choose.utils.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +28,7 @@ public class AgentRecommendController {
     private final AgentRecommendService agentRecommendService;
     private final AgentCallLogService logService;
     private final TagSuggestService tagSuggestService;
+    private final RecommendFeedbackService feedbackService;
 
     /** 多Agent协作推荐 */
     @PostMapping("/recommend")
@@ -42,6 +47,26 @@ public class AgentRecommendController {
     public Result recent(@RequestParam(defaultValue = "50") Integer limit) {
         List<AgentCallLog> rows = logService.listRecent(limit);
         return Result.ok(rows);
+    }
+
+    /**
+     * 用户提交满意度评价 (论文 5.2 推荐结果可对评价反馈)。
+     * Body: {traceId, rating(1-5), comment?}
+     */
+    @PostMapping("/feedback")
+    public Result feedback(@RequestBody RecommendFeedback fb) {
+        if (fb.getTraceId() == null || fb.getTraceId().isBlank()) {
+            return Result.error("traceId 必填");
+        }
+        if (fb.getRating() == null || fb.getRating() < 1 || fb.getRating() > 5) {
+            return Result.error("rating 必须在 1-5");
+        }
+        UserInfo u = UserLocalThread.getUser();
+        if (u != null && u.getId() != null && (fb.getUserId() == null || fb.getUserId().isBlank())) {
+            fb.setUserId(String.valueOf(u.getId()));
+        }
+        feedbackService.save(fb);
+        return Result.ok();
     }
 
     /**
