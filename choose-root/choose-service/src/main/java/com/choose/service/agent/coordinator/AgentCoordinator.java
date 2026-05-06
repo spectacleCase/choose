@@ -12,12 +12,14 @@ import com.choose.service.agent.impl.IntentParseAgent;
 import com.choose.service.agent.impl.NutritionAgent;
 import com.choose.service.agent.impl.ResultIntegrateAgent;
 import com.choose.service.agent.log.AgentCallLogService;
-import com.choose.service.recommend.RecommenderSystem;
 import com.choose.service.recommend.Impl.CascadeHybridRecommendationStrategy;
+import com.choose.service.recommend.RecommenderSystem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,11 +28,13 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Agent协调器。论文4.2/5.1的多Agent协作流程控制器。
- * 执行顺序: IntentParse -> DishRetrieval -> 并行(Nutrition, GeoMatch) -> ResultIntegrate
- * 任一环节失败则降级到原有协同过滤策略。
+ * 流程: IntentParse -> [冲突时短路返回追问] -> DishRetrieval ->
+ *      并行(Nutrition, GeoMatch) -> ResultIntegrate
+ * 任一环节失败则降级到原有协同过滤策略。支持多轮追问闭环。
  */
 @Component
 @Slf4j
@@ -44,10 +48,18 @@ public class AgentCoordinator {
     private final ResultIntegrateAgent resultIntegrateAgent;
     private final AgentCallLogService logService;
     private final CascadeHybridRecommendationStrategy fallbackStrategy;
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String SESSION_PREFIX = "agent:session:";
+    private static final long SESSION_TTL_MIN = 5;
 
     /** 营养评估和地理匹配的并行池 */
     private final ExecutorService pool = Executors.newFixedThreadPool(4);
 
+    /**
+     * 首次推荐入口。
+     * 若意图解析检测到矛盾约束,返回带追问的 ctx 并把会话存入 Redis 等待用户回复。
+     */
     public AgentContext run(String userQuery, String userId, String userLocation, int topK) {
         AgentContext ctx = new AgentContext();
         ctx.setUserQuery(userQuery);
@@ -68,23 +80,63 @@ public class AgentCoordinator {
         if (intent != null && Boolean.TRUE.equals(intent.getBoolean("conflict"))) {
             ctx.setConflictDetected(true);
             ctx.setClarifyQuestion(intent.getString("clarify_question"));
+            // 短路: 不继续跑下游 Agent,把会话存起来等用户回复
+            saveSession(ctx);
+            return ctx;
         }
+
+        // 没冲突,直接跑下游
+        runDownstream(ctx);
+        return ctx;
+    }
+
+    /**
+     * 多轮追问闭环: 用户对前一次的 clarify_question 给出回复后,
+     * 沿用原 traceId 继续跑后续 Agent。
+     */
+    public AgentContext continueWithReply(String traceId, String userReply) {
+        AgentContext ctx = loadSession(traceId);
+        if (ctx == null) {
+            throw new RuntimeException("会话已过期或不存在: " + traceId);
+        }
+        // 把用户回复合入意图,清除冲突标记
+        JSONObject intent = ctx.getParsedIntent();
+        if (intent == null) intent = new JSONObject();
+        intent.put("user_reply", userReply);
+        intent.put("conflict", false);
+        ctx.setParsedIntent(intent);
+        ctx.getClarifyHistory().add(
+                new AgentContext.ClarifyTurn(ctx.getClarifyQuestion(), userReply));
+        ctx.setConflictDetected(false);
+        ctx.setClarifyQuestion(null);
+
+        runDownstream(ctx);
+        deleteSession(traceId);
+        return ctx;
+    }
+
+    /** 检索 + 并行(营养+地理) + 整合 */
+    private void runDownstream(AgentContext ctx) {
+        JSONObject intent = ctx.getParsedIntent();
+        String userId = ctx.getUserId();
 
         // 2. 菜品检索
         String retrievalInput = "意图: " + (intent == null ? "{}" : intent.toJSONString())
+                + (ctx.getClarifyHistory().isEmpty() ? "" :
+                    "\n用户在追问中补充了: " + JSON.toJSONString(ctx.getClarifyHistory()))
                 + "\n请你调用 dish_query 工具查询候选菜品。";
         AgentResult dr = dishRetrievalAgent.execute(ctx, retrievalInput);
         logService.recordAsync(ctx.getTraceId(), userId, retrievalInput, dr);
         if (ctx.getCandidates().isEmpty()) {
             log.warn("[trace={}] dish retrieval got 0 candidates, fallback", ctx.getTraceId());
             applyFallback(ctx);
-            return ctx;
+            return;
         }
 
         // 3. 并行: 营养 + 地理
         boolean needsNutrition = intent != null && intent.containsKey("health")
                 && intent.getJSONArray("health") != null && !intent.getJSONArray("health").isEmpty();
-        boolean needsGeo = userLocation != null && !userLocation.isBlank();
+        boolean needsGeo = ctx.getUserLocation() != null && !ctx.getUserLocation().isBlank();
 
         CompletableFuture<AgentResult> nf = needsNutrition
                 ? CompletableFuture.supplyAsync(() -> {
@@ -97,7 +149,7 @@ public class AgentCoordinator {
 
         CompletableFuture<AgentResult> gf = needsGeo
                 ? CompletableFuture.supplyAsync(() -> {
-                    String input = "用户坐标: " + userLocation
+                    String input = "用户坐标: " + ctx.getUserLocation()
                             + "\n请对ctx.candidates调用 distance_calc。";
                     AgentResult r = geoMatchAgent.execute(ctx, input);
                     logService.recordAsync(ctx.getTraceId(), userId, input, r);
@@ -116,7 +168,6 @@ public class AgentCoordinator {
         AgentResult ar = resultIntegrateAgent.execute(ctx, integrateInput);
         logService.recordAsync(ctx.getTraceId(), userId, integrateInput, ar);
 
-        // 解析最终推荐顺序与理由
         Map<String, String> reasons = new HashMap<>();
         List<String> orderedIds = new ArrayList<>();
         if (ar.isSuccess()) {
@@ -132,7 +183,6 @@ public class AgentCoordinator {
                 }
             }
         }
-        // 兜底: 没拿到顺序就按营养分+距离打分排
         if (orderedIds.isEmpty()) {
             ctx.getCandidates().sort(Comparator.comparingDouble(
                     (RecommendVo v) -> ctx.getNutritionScores().getOrDefault(v.getId(), 50.0)).reversed());
@@ -148,11 +198,66 @@ public class AgentCoordinator {
             String reason = reasons.get(id);
             if (reason != null) v.setAiDescription(reason);
             finalList.add(v);
-            if (finalList.size() >= topK) break;
+            if (finalList.size() >= ctx.getTopK()) break;
         }
         ctx.setFinalRecommendations(finalList);
-        return ctx;
     }
+
+    // ---------- 会话存取 ----------
+
+    /** 序列化关键字段到 Redis,等下一轮 continueWithReply 加载。 */
+    private void saveSession(AgentContext ctx) {
+        try {
+            JSONObject snap = new JSONObject();
+            snap.put("traceId", ctx.getTraceId());
+            snap.put("userQuery", ctx.getUserQuery());
+            snap.put("userId", ctx.getUserId());
+            snap.put("userLocation", ctx.getUserLocation());
+            snap.put("topK", ctx.getTopK());
+            snap.put("parsedIntent", ctx.getParsedIntent());
+            snap.put("clarifyQuestion", ctx.getClarifyQuestion());
+            snap.put("clarifyHistory", JSON.toJSONString(ctx.getClarifyHistory()));
+            redisTemplate.opsForValue().set(SESSION_PREFIX + ctx.getTraceId(),
+                    snap.toJSONString(), SESSION_TTL_MIN, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("save session fail trace={}", ctx.getTraceId(), e);
+        }
+    }
+
+    private AgentContext loadSession(String traceId) {
+        try {
+            String json = redisTemplate.opsForValue().get(SESSION_PREFIX + traceId);
+            if (json == null) return null;
+            JSONObject snap = JSON.parseObject(json);
+            AgentContext ctx = new AgentContext();
+            // traceId 是 final,无法直接 set,通过反射赋值
+            try {
+                java.lang.reflect.Field f = AgentContext.class.getDeclaredField("traceId");
+                f.setAccessible(true);
+                f.set(ctx, snap.getString("traceId"));
+            } catch (Exception ignored) {}
+            ctx.setUserQuery(snap.getString("userQuery"));
+            ctx.setUserId(snap.getString("userId"));
+            ctx.setUserLocation(snap.getString("userLocation"));
+            ctx.setTopK(snap.getIntValue("topK"));
+            ctx.setParsedIntent(snap.getJSONObject("parsedIntent"));
+            ctx.setClarifyQuestion(snap.getString("clarifyQuestion"));
+            String histJson = snap.getString("clarifyHistory");
+            if (histJson != null) {
+                ctx.setClarifyHistory(JSON.parseArray(histJson, AgentContext.ClarifyTurn.class));
+            }
+            return ctx;
+        } catch (Exception e) {
+            log.warn("load session fail trace={}", traceId, e);
+            return null;
+        }
+    }
+
+    private void deleteSession(String traceId) {
+        try { redisTemplate.delete(SESSION_PREFIX + traceId); } catch (Exception ignored) {}
+    }
+
+    // ---------- helpers ----------
 
     private void applyFallback(AgentContext ctx) {
         try {
@@ -181,6 +286,9 @@ public class AgentCoordinator {
         }
         brief.put("candidates", cands);
         brief.put("topK", ctx.getTopK());
+        if (!ctx.getClarifyHistory().isEmpty()) {
+            brief.put("clarifyHistory", ctx.getClarifyHistory());
+        }
         return "请基于以下信息生成最终推荐及推荐理由:\n" + brief.toJSONString();
     }
 
@@ -190,4 +298,7 @@ public class AgentCoordinator {
         try { return JSON.parseObject(JSON.toJSONString(o)); }
         catch (Exception e) { return null; }
     }
+
+    @PreDestroy
+    void shutdown() { pool.shutdownNow(); }
 }

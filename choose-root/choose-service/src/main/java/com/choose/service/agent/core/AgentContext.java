@@ -2,7 +2,9 @@ package com.choose.service.agent.core;
 
 import com.alibaba.fastjson.JSONObject;
 import com.choose.recommoend.vo.RecommendVo;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +58,18 @@ public class AgentContext {
     /** 各Agent耗时,key=AgentName */
     private final Map<String, Long> agentLatency = new ConcurrentHashMap<>();
 
+    /** 多轮追问历史 (论文 3.1.4 多轮对话) */
+    private List<ClarifyTurn> clarifyHistory = new ArrayList<>();
+
     public void addTrace(String agentName, List<ReActStep> steps) {
         agentTraces.put(agentName, steps);
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ClarifyTurn {
+        private String question;
+        private String reply;
     }
 }

@@ -2,6 +2,7 @@ package com.choose_admin.controller;
 
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.choose.agent.dto.AgentContinueDto;
 import com.choose.agent.dto.AgentRecommendDto;
 import com.choose.agent.pojos.AgentCallLog;
 import com.choose.agent.pojos.DishIngredient;
@@ -14,12 +15,14 @@ import com.choose.dishes.pojos.Shops;
 import com.choose.mapper.DishesMapper;
 import com.choose.mapper.ShopsMapper;
 import com.choose.service.agent.AgentRecommendService;
+import com.choose.service.agent.core.AgentLLMClient;
 import com.choose.service.agent.feedback.RecommendFeedbackService;
 import com.choose.service.agent.health.HealthTagService;
 import com.choose.service.agent.ingredient.DishIngredientService;
 import com.choose.service.agent.ingredient.IngredientService;
 import com.choose.service.agent.log.AgentCallLogService;
 import com.choose.service.agent.log.AgentStatsService;
+import com.choose.service.agent.log.ToolCallLogService;
 import com.choose.service.agent.nutrition.NutritionService;
 import com.choose.utils.Result;
 import lombok.RequiredArgsConstructor;
@@ -52,11 +55,19 @@ public class AdminAgentController {
     private final RecommendFeedbackService feedbackService;
     private final DishesMapper dishesMapper;
     private final ShopsMapper shopsMapper;
+    private final AgentLLMClient llmClient;
+    private final ToolCallLogService toolCallLogService;
 
     // ============================== 演练台 ==============================
     @PostMapping("/recommend")
     public Result recommend(@Valid @RequestBody AgentRecommendDto dto) {
         return Result.ok(agentRecommendService.recommend(dto));
+    }
+
+    /** 多轮追问闭环: 提交用户对前一轮 clarify_question 的回复。 */
+    @PostMapping("/continue")
+    public Result continueWithReply(@Valid @RequestBody AgentContinueDto dto) {
+        return Result.ok(agentRecommendService.continueWithReply(dto.getTraceId(), dto.getReply()));
     }
 
     // ============================== 监控 ================================
@@ -80,6 +91,23 @@ public class AdminAgentController {
     @GetMapping("/trace/{traceId}")
     public Result trace(@PathVariable String traceId) {
         return Result.ok(agentRecommendService.getTrace(traceId));
+    }
+
+    /** 工具级调用记录: 按链路或最近列表 */
+    @GetMapping("/tool-calls/by-trace/{traceId}")
+    public Result toolCallsByTrace(@PathVariable String traceId) {
+        return Result.ok(toolCallLogService.listByTrace(traceId));
+    }
+
+    @GetMapping("/tool-calls/recent")
+    public Result toolCallsRecent(@RequestParam(defaultValue = "100") Integer limit) {
+        return Result.ok(toolCallLogService.listRecent(limit));
+    }
+
+    /** LLM 熔断器状态 */
+    @GetMapping("/llm/breaker")
+    public Result llmBreaker() {
+        return Result.ok(llmClient.breakerStatus());
     }
 
     // ============================== 聚合统计 (4 类指标) ==================

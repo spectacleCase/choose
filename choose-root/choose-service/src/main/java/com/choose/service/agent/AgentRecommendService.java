@@ -45,4 +45,19 @@ public class AgentRecommendService {
         vo.setCalls(logService.listByTrace(traceId));
         return vo;
     }
+
+    /**
+     * 多轮追问闭环: 用户回复 clarify_question 后,沿用原 traceId 继续推理。
+     */
+    public AgentRecommendVo continueWithReply(String traceId, String userReply) {
+        AgentContext ctx = coordinator.continueWithReply(traceId, userReply);
+        AgentRecommendVo vo = new AgentRecommendVo();
+        vo.setTraceId(ctx.getTraceId());
+        vo.setConflictDetected(ctx.isConflictDetected());
+        vo.setClarifyQuestion(ctx.getClarifyQuestion());
+        vo.setParsedIntent(ctx.getParsedIntent());
+        vo.setItems(ctx.getFinalRecommendations());
+        vo.setAgentLatency(ctx.getAgentLatency());
+        return vo;
+    }
 }

@@ -2,6 +2,7 @@ package com.choose.service.agent.core;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.choose.service.agent.log.ToolCallLogService;
 import com.choose.service.agent.tool.Tool;
 import com.choose.service.agent.tool.ToolRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,9 @@ public abstract class BaseAgent {
 
     @Autowired
     protected ToolRegistry toolRegistry;
+
+    @Autowired
+    protected ToolCallLogService toolCallLogService;
 
     /** 子类决定 */
     public abstract String name();
@@ -108,19 +112,30 @@ public abstract class BaseAgent {
                 String obs = "工具 " + toolName + " 不可用,允许的工具: " + allowedTools();
                 steps.add(ReActStep.of(ReActStep.Type.OBSERVATION, obs, 0));
                 convo.append("Observation: ").append(obs).append("\n");
+                // 越权调用单独记录,便于审计
+                toolCallLogService.recordAsync(ctx.getTraceId(), name(), toolName,
+                        params, obs, 0L, "DENIED", "tool not authorized");
                 continue;
             }
 
             String observation;
+            String toolStatus = "SUCCESS";
+            String toolErr = null;
+            long toolStart = System.currentTimeMillis();
             try {
                 observation = tool.execute(params, ctx);
             } catch (Exception e) {
                 observation = "工具执行失败: " + e.getMessage();
+                toolStatus = "FAIL";
+                toolErr = e.getMessage();
                 log.warn("[{}] tool {} failed", name(), toolName, e);
             }
-            steps.add(ReActStep.of(ReActStep.Type.OBSERVATION, observation, 0));
+            long toolMs = System.currentTimeMillis() - toolStart;
+            steps.add(ReActStep.of(ReActStep.Type.OBSERVATION, observation, toolMs));
             convo.append("Action: ").append(toolName).append(" ").append(params.toJSONString()).append("\n");
             convo.append("Observation: ").append(observation).append("\n");
+            toolCallLogService.recordAsync(ctx.getTraceId(), name(), toolName,
+                    params, observation, toolMs, toolStatus, toolErr);
         }
 
         long elapsed = System.currentTimeMillis() - start;

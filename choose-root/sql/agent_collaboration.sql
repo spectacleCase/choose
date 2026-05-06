@@ -109,6 +109,27 @@ CREATE TABLE choose_dish_ingredient (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='菜品-食材关联';
 
 
+-- ============== 工具级调用日志 (论文 4.3 "统一监控") ==============
+DROP TABLE IF EXISTS choose_tool_call_log;
+CREATE TABLE choose_tool_call_log (
+    id            BIGINT       NOT NULL PRIMARY KEY,
+    trace_id      VARCHAR(64)  NOT NULL              COMMENT '链路ID',
+    agent_name    VARCHAR(64)  NOT NULL              COMMENT '调用方Agent',
+    tool_name     VARCHAR(64)  NOT NULL              COMMENT '工具名',
+    params        TEXT         DEFAULT NULL          COMMENT '调用参数JSON',
+    observation   TEXT         DEFAULT NULL          COMMENT '工具返回Observation',
+    elapsed_ms    BIGINT       DEFAULT NULL          COMMENT '执行耗时ms',
+    status        VARCHAR(16)  DEFAULT 'SUCCESS'     COMMENT 'SUCCESS/FAIL/DENIED',
+    error_message VARCHAR(1000) DEFAULT NULL,
+    create_time   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    update_time   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_delete     TINYINT(1)   DEFAULT 0,
+    KEY idx_trace_id (trace_id),
+    KEY idx_tool_status (tool_name, status),
+    KEY idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具调用细粒度日志';
+
+
 -- ============== 推荐满意度反馈 ==============
 DROP TABLE IF EXISTS choose_recommend_feedback;
 CREATE TABLE choose_recommend_feedback (
