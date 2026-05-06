@@ -61,6 +61,10 @@ public class AgentContext {
     /** 多轮追问历史 (论文 3.1.4 多轮对话) */
     private List<ClarifyTurn> clarifyHistory = new ArrayList<>();
 
+    /** P-ReAct 累计节省的端到端耗时 ms (论文 2.2.4):
+     *  对每次启用了 P-ReAct 的工具调用, savedMs += (tool_ms + pre_thought_ms) - max(tool_ms, pre_thought_ms) */
+    private long pReActSavedMs = 0;
+
     public void addTrace(String agentName, List<ReActStep> steps) {
         agentTraces.put(agentName, steps);
     }

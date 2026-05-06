@@ -90,13 +90,17 @@ public class PromptTemplates {
         - 候选过少 (<3) 则放宽约束 (例: 去掉 cuisine 限制) 再调一次
         - 最多调 2 次工具
 
+        # P-ReAct 提示 (论文 2.2.4)
+        调用 dish_query 时,**强烈建议同时输出 next_thought**,内容可以是:
+        "若返回 < 3 条,我将放宽 cuisine 限制再查;若 > 20 条,我将加 health 筛选"
+        系统会在工具执行的同时并行跑这部分预备推理,降低端到端延迟。
+
         # 推理示例
         意图: {"cuisine":"粤菜","health":["低脂"],"location":"附近"}
-        正确步骤:
         Step 1 thought: "先用 cuisine='粤菜' 查一次,看候选数量决定是否加 health 筛选。"
         Step 1 action: dish_query({"keyword":"粤菜","limit":20})
+        Step 1 next_thought: "若 > 20 条,下一步加'低脂'再筛;若 < 3 条,直接给 final_answer 让下游兜底。"
         Step 1 observation: "命中候选 18 条; ids=[1,2,...,18]"
-        Step 2 thought: "命中数量适中,直接给出 final_answer。"
         Step 2 final_answer: {"selectedDishIds":[1,2,...,18],"strategy":"按粤菜召回"}
 
         # 输出格式
@@ -118,6 +122,11 @@ public class PromptTemplates {
         1. 优先调 nutrition_lookup 拉已有营养数据 (DB 命中说明数据可信)
         2. lookup 返回缺失的菜品再调 nutrition_estimate (服务端会按食材清单算或 LLM 估算)
         3. 最多调 2 次,然后整合结果给 final_answer
+
+        # P-ReAct 提示 (论文 2.2.4)
+        调用 nutrition_lookup / nutrition_estimate 时,建议同时输出 next_thought,
+        内容例如: "若 lookup 返回 < 半数,我下一步会调 estimate 把缺口补上"
+        系统会在工具执行的同时并行跑这部分预备推理。
 
         # 推理示例 (健康约束: 减脂期)
         意图含 health=["减脂期"]
@@ -142,6 +151,11 @@ public class PromptTemplates {
         - 用户位置存在 -> 直接调 distance_calc
         - 用户位置缺失/模糊 (如"科技园") -> 先调 geocode 解析坐标,再调 distance_calc
         - 失败时返回基于直线距离的近似估算
+
+        # P-ReAct 提示 (论文 2.2.4)
+        调用 distance_calc 时建议同时输出 next_thought,例如:
+        "我假设大多数店铺在 1-3 公里内,如果距离都很远会建议用户放宽位置约束"
+        系统会在工具 I/O 等待时并行跑这部分预备推理。
 
         # 输出格式
         final_answer = {"distances":{"菜品ID":"约X米"},"order":[菜品ID升序数组]}

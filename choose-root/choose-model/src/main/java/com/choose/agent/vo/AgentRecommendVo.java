@@ -32,4 +32,7 @@ public class AgentRecommendVo {
 
     /** 是否走了异步营养路径,前端见此为 true 时启动轮询 GET enriched */
     private boolean asyncNutritionPending;
+
+    /** P-ReAct 累计节省的端到端耗时 ms (论文 2.2.4) */
+    private long pReActSavedMs;
 }

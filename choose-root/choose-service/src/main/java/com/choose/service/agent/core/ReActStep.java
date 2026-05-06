@@ -14,7 +14,7 @@ import java.time.Instant;
 @NoArgsConstructor
 public class ReActStep {
 
-    public enum Type { THOUGHT, ACTION, OBSERVATION, FINAL_ANSWER }
+    public enum Type { THOUGHT, ACTION, OBSERVATION, FINAL_ANSWER, PRE_THOUGHT }
 
     private Type type;
     private String content;

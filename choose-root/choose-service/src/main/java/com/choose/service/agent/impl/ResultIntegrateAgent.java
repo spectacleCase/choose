@@ -20,4 +20,8 @@ public class ResultIntegrateAgent extends BaseAgent {
 
     @Override
     protected int maxIterations() { return 2; }
+
+    /** 不调工具,P-ReAct 没用武之地 */
+    @Override
+    protected boolean supportsPReAct() { return false; }
 }

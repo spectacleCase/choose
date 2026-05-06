@@ -38,6 +38,7 @@ public class AgentRecommendService {
         vo.setItems(ctx.getFinalRecommendations());
         vo.setAgentLatency(ctx.getAgentLatency());
         vo.setAsyncNutritionPending(async);
+        vo.setPReActSavedMs(ctx.getPReActSavedMs());
         return vo;
     }
 
@@ -65,6 +66,7 @@ public class AgentRecommendService {
         vo.setParsedIntent(ctx.getParsedIntent());
         vo.setItems(ctx.getFinalRecommendations());
         vo.setAgentLatency(ctx.getAgentLatency());
+        vo.setPReActSavedMs(ctx.getPReActSavedMs());
         return vo;
     }
 }
