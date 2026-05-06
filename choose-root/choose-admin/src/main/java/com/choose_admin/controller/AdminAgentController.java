@@ -15,6 +15,7 @@ import com.choose.dishes.pojos.Shops;
 import com.choose.mapper.DishesMapper;
 import com.choose.mapper.ShopsMapper;
 import com.choose.service.agent.AgentRecommendService;
+import com.choose.service.agent.cache.TwoLevelCache;
 import com.choose.service.agent.core.AgentLLMClient;
 import com.choose.service.agent.feedback.RecommendFeedbackService;
 import com.choose.service.agent.health.HealthTagService;
@@ -57,6 +58,7 @@ public class AdminAgentController {
     private final ShopsMapper shopsMapper;
     private final AgentLLMClient llmClient;
     private final ToolCallLogService toolCallLogService;
+    private final TwoLevelCache twoLevelCache;
 
     // ============================== 演练台 ==============================
     @PostMapping("/recommend")
@@ -68,6 +70,28 @@ public class AdminAgentController {
     @PostMapping("/continue")
     public Result continueWithReply(@Valid @RequestBody AgentContinueDto dto) {
         return Result.ok(agentRecommendService.continueWithReply(dto.getTraceId(), dto.getReply()));
+    }
+
+    /**
+     * 异步营养评估完成后,前端轮询此接口拿增量结果。
+     * 未完成返回 status=PENDING; 完成返回 status=READY + items。
+     */
+    @GetMapping("/recommend/{traceId}/enriched")
+    public Result enriched(@PathVariable String traceId) {
+        String json = agentRecommendService.getEnriched(traceId);
+        if (json == null) {
+            return Result.ok(java.util.Map.of("status", "PENDING"));
+        }
+        java.util.Map<String, Object> m = new java.util.HashMap<>();
+        m.put("status", "READY");
+        m.put("data", com.alibaba.fastjson.JSON.parseObject(json));
+        return Result.ok(m);
+    }
+
+    /** 二级缓存命中率统计 (论文 5.1) */
+    @GetMapping("/cache/stats")
+    public Result cacheStats() {
+        return Result.ok(twoLevelCache.stats());
     }
 
     // ============================== 监控 ================================

@@ -8,6 +8,7 @@ import com.choose.agent.pojos.DishNutrition;
 import com.choose.agent.pojos.HealthTag;
 import com.choose.agent.pojos.Ingredient;
 import com.choose.mapper.DishNutritionMapper;
+import com.choose.service.agent.cache.TwoLevelCache;
 import com.choose.service.agent.core.AgentLLMClient;
 import com.choose.service.agent.health.HealthTagService;
 import com.choose.service.agent.ingredient.DishIngredientService;
@@ -16,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 营养数据服务,完整闭环:
@@ -39,13 +38,12 @@ import java.util.concurrent.TimeUnit;
 public class NutritionService extends ServiceImpl<DishNutritionMapper, DishNutrition> {
 
     private final AgentLLMClient llmClient;
-    private final StringRedisTemplate redisTemplate;
+    private final TwoLevelCache cache;
     @Lazy @Autowired private DishIngredientService dishIngredientService;
     @Lazy @Autowired private IngredientService ingredientService;
     @Lazy @Autowired private HealthTagService healthTagService;
 
-    private static final String CACHE_PREFIX = "agent:nutrition:";
-    private static final long TTL_HOURS = 24;
+    private static final String CACHE_NS = "nutrition.llm";
     private static final SpelExpressionParser SPEL = new SpelExpressionParser();
 
     public DishNutrition getByDishId(Long dishId) {
@@ -155,31 +153,28 @@ public class NutritionService extends ServiceImpl<DishNutritionMapper, DishNutri
     }
 
     /**
-     * 让LLM按菜名估算营养。失败时返回保守默认值。
+     * 让LLM按菜名估算营养。走二级缓存 (论文 5.1):
+     * 同一菜名近 60 分钟内重复调直接命中 L1/L2,避免重复调 LLM。
      */
     public DishNutrition estimateByName(Long dishId, String dishName) {
-        String cacheKey = CACHE_PREFIX + dishName;
-        String cached = redisTemplate.opsForValue().get(cacheKey);
         DishNutrition n;
-        if (cached != null) {
-            n = parseLlmJson(cached);
-            if (n != null) {
-                n.setDishId(dishId);
-                n.setSource("llm_estimate");
-                return n;
-            }
-        }
-        String sys = "你是营养师。基于中国餐饮常见做法,估算给定菜品一份的营养成分。" +
-                "严格输出JSON: {\"calorie\":kcal,\"protein\":g,\"fat\":g,\"carbs\":g,\"fiber\":g,\"sodium\":mg}";
         try {
-            String raw = llmClient.chat(sys, "菜品名: " + dishName);
-            n = parseLlmJson(raw);
-            if (n == null) n = fallback();
-            redisTemplate.opsForValue().set(cacheKey, raw, TTL_HOURS, TimeUnit.HOURS);
+            n = cache.get(CACHE_NS, dishName, DishNutrition.class, k -> {
+                String sys = "你是营养师。基于中国餐饮常见做法,估算给定菜品一份的营养成分。" +
+                        "严格输出JSON: {\"calorie\":kcal,\"protein\":g,\"fat\":g,\"carbs\":g,\"fiber\":g,\"sodium\":mg}";
+                try {
+                    String raw = llmClient.chat(sys, "菜品名: " + k);
+                    DishNutrition parsed = parseLlmJson(raw);
+                    return parsed != null ? parsed : fallback();
+                } catch (Exception e) {
+                    log.warn("LLM estimate failed for {}", k, e);
+                    return fallback();
+                }
+            });
         } catch (Exception e) {
-            log.warn("LLM estimate failed for {}", dishName, e);
             n = fallback();
         }
+        if (n == null) n = fallback();
         n.setDishId(dishId);
         n.setSource("llm_estimate");
         n.setHealthTags(JSONArray.toJSONString(evaluateTags(n)));

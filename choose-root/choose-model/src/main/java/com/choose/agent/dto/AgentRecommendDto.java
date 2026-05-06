@@ -19,4 +19,7 @@ public class AgentRecommendDto {
 
     /** 期望返回数量,默认5 */
     private Integer num;
+
+    /** 是否走异步营养评估路径 (论文 3.2),默认 false */
+    private Boolean asyncNutrition;
 }

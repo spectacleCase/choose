@@ -29,4 +29,7 @@ public class AgentRecommendVo {
 
     /** 各Agent耗时 ms */
     private Map<String, Long> agentLatency;
+
+    /** 是否走了异步营养路径,前端见此为 true 时启动轮询 GET enriched */
+    private boolean asyncNutritionPending;
 }

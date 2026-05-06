@@ -52,6 +52,8 @@ public class AgentCoordinator {
 
     private static final String SESSION_PREFIX = "agent:session:";
     private static final long SESSION_TTL_MIN = 5;
+    private static final String ENRICHED_PREFIX = "agent:enriched:";
+    private static final long ENRICHED_TTL_MIN = 5;
 
     /** 营养评估和地理匹配的并行池 */
     private final ExecutorService pool = Executors.newFixedThreadPool(4);
@@ -61,6 +63,16 @@ public class AgentCoordinator {
      * 若意图解析检测到矛盾约束,返回带追问的 ctx 并把会话存入 Redis 等待用户回复。
      */
     public AgentContext run(String userQuery, String userId, String userLocation, int topK) {
+        return run(userQuery, userId, userLocation, topK, false);
+    }
+
+    /**
+     * @param asyncNutrition true 时主流程不等 NutritionAgent (论文 3.2 "营养评估非核心,
+     *                       异步计算后补充展示")。营养完成后会写入 Redis,前端通过
+     *                       GET /agent/recommend/{traceId}/enriched 轮询拿增量结果。
+     */
+    public AgentContext run(String userQuery, String userId, String userLocation,
+                            int topK, boolean asyncNutrition) {
         AgentContext ctx = new AgentContext();
         ctx.setUserQuery(userQuery);
         ctx.setUserId(userId);
@@ -80,13 +92,11 @@ public class AgentCoordinator {
         if (intent != null && Boolean.TRUE.equals(intent.getBoolean("conflict"))) {
             ctx.setConflictDetected(true);
             ctx.setClarifyQuestion(intent.getString("clarify_question"));
-            // 短路: 不继续跑下游 Agent,把会话存起来等用户回复
             saveSession(ctx);
             return ctx;
         }
 
-        // 没冲突,直接跑下游
-        runDownstream(ctx);
+        runDownstream(ctx, asyncNutrition);
         return ctx;
     }
 
@@ -110,13 +120,13 @@ public class AgentCoordinator {
         ctx.setConflictDetected(false);
         ctx.setClarifyQuestion(null);
 
-        runDownstream(ctx);
+        runDownstream(ctx, false);
         deleteSession(traceId);
         return ctx;
     }
 
     /** 检索 + 并行(营养+地理) + 整合 */
-    private void runDownstream(AgentContext ctx) {
+    private void runDownstream(AgentContext ctx, boolean asyncNutrition) {
         JSONObject intent = ctx.getParsedIntent();
         String userId = ctx.getUserId();
 
@@ -138,15 +148,6 @@ public class AgentCoordinator {
                 && intent.getJSONArray("health") != null && !intent.getJSONArray("health").isEmpty();
         boolean needsGeo = ctx.getUserLocation() != null && !ctx.getUserLocation().isBlank();
 
-        CompletableFuture<AgentResult> nf = needsNutrition
-                ? CompletableFuture.supplyAsync(() -> {
-                    String input = "意图: " + intent.toJSONString();
-                    AgentResult r = nutritionAgent.execute(ctx, input);
-                    logService.recordAsync(ctx.getTraceId(), userId, input, r);
-                    return r;
-                }, pool)
-                : CompletableFuture.completedFuture(null);
-
         CompletableFuture<AgentResult> gf = needsGeo
                 ? CompletableFuture.supplyAsync(() -> {
                     String input = "用户坐标: " + ctx.getUserLocation()
@@ -157,16 +158,72 @@ public class AgentCoordinator {
                 }, pool)
                 : CompletableFuture.completedFuture(null);
 
-        try {
-            CompletableFuture.allOf(nf, gf).get();
-        } catch (Exception e) {
-            log.warn("[trace={}] parallel agents failed", ctx.getTraceId(), e);
+        if (asyncNutrition && needsNutrition) {
+            // 主流程不等营养, 先用地理 + 候选打分整合一版"快"结果
+            try { gf.get(); } catch (Exception e) { log.warn("geo failed", e); }
+            assembleFinalList(ctx);
+            // 后台跑营养 + 重新整合 -> 写 Redis 等前端轮询
+            pool.submit(() -> enrichWithNutrition(ctx, intent));
+        } else {
+            // 经典同步路径
+            CompletableFuture<AgentResult> nf = needsNutrition
+                    ? CompletableFuture.supplyAsync(() -> {
+                        String input = "意图: " + intent.toJSONString();
+                        AgentResult r = nutritionAgent.execute(ctx, input);
+                        logService.recordAsync(ctx.getTraceId(), userId, input, r);
+                        return r;
+                    }, pool)
+                    : CompletableFuture.completedFuture(null);
+            try {
+                CompletableFuture.allOf(nf, gf).get();
+            } catch (Exception e) {
+                log.warn("[trace={}] parallel agents failed", ctx.getTraceId(), e);
+            }
+            assembleFinalList(ctx);
         }
+    }
 
-        // 4. 结果整合
+    /**
+     * 异步营养评估 + 重新整合,结果存 Redis 等前端轮询。
+     */
+    private void enrichWithNutrition(AgentContext ctx, JSONObject intent) {
+        try {
+            String input = "意图: " + intent.toJSONString();
+            AgentResult nr = nutritionAgent.execute(ctx, input);
+            logService.recordAsync(ctx.getTraceId(), ctx.getUserId(), input, nr);
+
+            // 重新整合
+            assembleFinalList(ctx);
+
+            // 写入 Redis,前端 GET /agent/recommend/{trace}/enriched 拉取
+            JSONArray arr = new JSONArray();
+            for (RecommendVo v : ctx.getFinalRecommendations()) {
+                JSONObject o = new JSONObject();
+                o.put("id", v.getId());
+                o.put("dishesName", v.getDishesName());
+                o.put("image", v.getImage());
+                o.put("shopName", v.getShopName());
+                o.put("aiDescription", v.getAiDescription());
+                o.put("tagName", v.getTagName());
+                o.put("nutritionScore", ctx.getNutritionScores().get(v.getId()));
+                arr.add(o);
+            }
+            JSONObject enriched = new JSONObject();
+            enriched.put("traceId", ctx.getTraceId());
+            enriched.put("items", arr);
+            enriched.put("nutritionScores", ctx.getNutritionScores());
+            redisTemplate.opsForValue().set(ENRICHED_PREFIX + ctx.getTraceId(),
+                    enriched.toJSONString(), ENRICHED_TTL_MIN, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("[trace={}] async nutrition enrich failed", ctx.getTraceId(), e);
+        }
+    }
+
+    /** 调结果整合 Agent + 兜底排序 + 截 topK,写入 ctx.finalRecommendations */
+    private void assembleFinalList(AgentContext ctx) {
         String integrateInput = buildIntegrateInput(ctx);
         AgentResult ar = resultIntegrateAgent.execute(ctx, integrateInput);
-        logService.recordAsync(ctx.getTraceId(), userId, integrateInput, ar);
+        logService.recordAsync(ctx.getTraceId(), ctx.getUserId(), integrateInput, ar);
 
         Map<String, String> reasons = new HashMap<>();
         List<String> orderedIds = new ArrayList<>();
@@ -188,7 +245,6 @@ public class AgentCoordinator {
                     (RecommendVo v) -> ctx.getNutritionScores().getOrDefault(v.getId(), 50.0)).reversed());
             for (RecommendVo v : ctx.getCandidates()) orderedIds.add(v.getId());
         }
-
         Map<String, RecommendVo> idx = new HashMap<>();
         for (RecommendVo v : ctx.getCandidates()) idx.put(v.getId(), v);
         List<RecommendVo> finalList = new ArrayList<>();
@@ -201,6 +257,12 @@ public class AgentCoordinator {
             if (finalList.size() >= ctx.getTopK()) break;
         }
         ctx.setFinalRecommendations(finalList);
+    }
+
+    /** 取异步 enrich 后的结果。返回 null 表示尚未完成。 */
+    public String getEnriched(String traceId) {
+        try { return redisTemplate.opsForValue().get(ENRICHED_PREFIX + traceId); }
+        catch (Exception e) { return null; }
     }
 
     // ---------- 会话存取 ----------

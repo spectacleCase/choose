@@ -2,25 +2,29 @@ package com.choose.service.agent.tool;
 
 import com.alibaba.fastjson.JSONObject;
 import com.choose.common.CommonUtils;
+import com.choose.service.agent.cache.TwoLevelCache;
 import com.choose.service.agent.core.AgentContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 地理编码工具:用户位置描述->结构化地址。当前主要用于回填上下文文字描述。
+ * 地理编码工具:用户位置描述->结构化地址。带二级缓存。
  */
 @Component
 @RequiredArgsConstructor
 public class GeocodeTool implements Tool {
 
     private final CommonUtils commonUtils;
+    private final TwoLevelCache cache;
+
+    private static final String NS = "amap.geocode";
 
     @Override
     public String name() { return "geocode"; }
 
     @Override
     public String description() {
-        return "将经纬度坐标解析为可读地址,或确认用户位置描述。";
+        return "将经纬度坐标解析为可读地址。带二级缓存,相同坐标直接命中。";
     }
 
     @Override
@@ -36,7 +40,8 @@ public class GeocodeTool implements Tool {
             return "未提供坐标";
         }
         try {
-            String addr = commonUtils.geocode(location);
+            String key = location;
+            String addr = cache.get(NS, key, String.class, k -> commonUtils.geocode(key));
             return "地址: " + addr;
         } catch (Exception e) {
             return "geocode失败: " + e.getMessage();

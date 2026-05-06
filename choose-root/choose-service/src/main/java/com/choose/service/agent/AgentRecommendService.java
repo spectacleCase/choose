@@ -27,7 +27,8 @@ public class AgentRecommendService {
         if (u != null && u.getId() != null) userId = String.valueOf(u.getId());
 
         int topK = dto.getNum() == null || dto.getNum() <= 0 ? 5 : dto.getNum();
-        AgentContext ctx = coordinator.run(dto.getQuery(), userId, dto.getLocation(), topK);
+        boolean async = Boolean.TRUE.equals(dto.getAsyncNutrition());
+        AgentContext ctx = coordinator.run(dto.getQuery(), userId, dto.getLocation(), topK, async);
 
         AgentRecommendVo vo = new AgentRecommendVo();
         vo.setTraceId(ctx.getTraceId());
@@ -36,7 +37,13 @@ public class AgentRecommendService {
         vo.setParsedIntent(ctx.getParsedIntent());
         vo.setItems(ctx.getFinalRecommendations());
         vo.setAgentLatency(ctx.getAgentLatency());
+        vo.setAsyncNutritionPending(async);
         return vo;
+    }
+
+    /** 取异步营养完成后的增量结果 (论文 3.2 "异步计算后补充展示") */
+    public String getEnriched(String traceId) {
+        return coordinator.getEnriched(traceId);
     }
 
     public AgentTraceVo getTrace(String traceId) {
