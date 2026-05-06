@@ -41,10 +41,25 @@ public class NutritionEstimateTool implements Tool {
         for (RecommendVo v : ctx.getCandidates()) {
             Long id;
             try { id = Long.valueOf(v.getId()); } catch (Exception e) { continue; }
+
+            // 优先级 1: DB 已有手工/食材计算结果
             DishNutrition n = nutritionService.getByDishId(id);
+            String source = n != null ? n.getSource() : null;
+
+            // 优先级 2: 食材清单加权计算
+            if (n == null || n.getCalorie() == null) {
+                DishNutrition byIng = nutritionService.estimateByIngredients(id);
+                if (byIng != null) {
+                    n = byIng;
+                    source = "ingredient_calc";
+                }
+            }
+            // 优先级 3: LLM 估算
             if (n == null || n.getCalorie() == null) {
                 n = nutritionService.estimateByName(id, v.getDishesName());
+                source = "llm_estimate";
             }
+
             double score = scoreFor(n, goal);
             ctx.getNutritionScores().put(v.getId(), score);
             JSONObject o = new JSONObject();
@@ -53,6 +68,7 @@ public class NutritionEstimateTool implements Tool {
             o.put("calorie", n.getCalorie());
             o.put("fat", n.getFat());
             o.put("protein", n.getProtein());
+            o.put("source", source);
             arr.add(o);
         }
         return "已对 " + arr.size() + " 条菜品完成营养估算: " + arr.toJSONString();

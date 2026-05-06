@@ -49,7 +49,7 @@ DROP TABLE IF EXISTS choose_health_tag;
 CREATE TABLE choose_health_tag (
     id           BIGINT       NOT NULL PRIMARY KEY,
     name         VARCHAR(64)  NOT NULL              COMMENT '标签名',
-    definition   VARCHAR(500) DEFAULT NULL          COMMENT '判定规则(自然语言或表达式)',
+    definition   VARCHAR(500) DEFAULT NULL          COMMENT 'SpEL 表达式,可用变量: calorie/protein/fat/carbs/fiber/sodium',
     color        VARCHAR(16)  DEFAULT '#10b981'     COMMENT '前端展示色',
     status       TINYINT      DEFAULT 1             COMMENT '1=启用 0=停用',
     create_time  DATETIME     DEFAULT CURRENT_TIMESTAMP,
@@ -59,12 +59,12 @@ CREATE TABLE choose_health_tag (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='健康标签管理';
 
 INSERT INTO choose_health_tag(id, name, definition, color, status) VALUES
-(1,'低脂','一份菜脂肪 < 12g','#10b981',1),
-(2,'高蛋白','一份菜蛋白质 > 20g','#3b82f6',1),
-(3,'低盐','一份菜钠 < 600mg','#06b6d4',1),
-(4,'减脂期','热量 < 400kcal AND 脂肪 < 12g AND 蛋白 > 15g','#f59e0b',1),
-(5,'高热量','热量 > 700kcal','#ef4444',1),
-(6,'清淡','钠 < 500mg AND 脂肪 < 15g','#84cc16',1);
+(1,'低脂',  'fat < 12',                                 '#10b981',1),
+(2,'高蛋白','protein > 20',                             '#3b82f6',1),
+(3,'低盐',  'sodium < 600',                             '#06b6d4',1),
+(4,'减脂期','calorie < 400 && fat < 12 && protein > 15','#f59e0b',1),
+(5,'高热量','calorie > 700',                            '#ef4444',1),
+(6,'清淡',  'sodium < 500 && fat < 15',                 '#84cc16',1);
 
 
 -- ============== 食材主数据 ==============
