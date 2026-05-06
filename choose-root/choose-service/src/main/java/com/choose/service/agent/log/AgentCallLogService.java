@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -32,6 +33,10 @@ public class AgentCallLogService extends ServiceImpl<AgentCallLogMapper, AgentCa
             log.setElapsedMs(result.getElapsedMs());
             log.setStatus(result.isSuccess() ? "SUCCESS" : "FAIL");
             log.setErrorMessage(result.getErrorMessage());
+            // 简易 token 估算: input/output 字符数 / 2
+            long tk = (input == null ? 0 : input.length() / 2);
+            if (result.getData() != null) tk += JSON.toJSONString(result.getData()).length() / 2;
+            log.setTokenUsage(tk);
             save(log);
         } catch (Exception e) {
             log.error("save agent call log fail", e);
@@ -48,6 +53,20 @@ public class AgentCallLogService extends ServiceImpl<AgentCallLogMapper, AgentCa
         return list(new LambdaQueryWrapper<AgentCallLog>()
                 .orderByDesc(AgentCallLog::getCreateTime)
                 .last("LIMIT " + Math.min(limit, 200)));
+    }
+
+    /**
+     * 带筛选条件的列表查询。所有参数都是可空(null=不筛选)。
+     */
+    public List<AgentCallLog> listFiltered(Date from, Date to, String agentName,
+                                           String status, int limit) {
+        LambdaQueryWrapper<AgentCallLog> qw = new LambdaQueryWrapper<>();
+        if (from != null) qw.ge(AgentCallLog::getCreateTime, from);
+        if (to != null) qw.le(AgentCallLog::getCreateTime, to);
+        if (agentName != null && !agentName.isBlank()) qw.eq(AgentCallLog::getAgentName, agentName);
+        if (status != null && !status.isBlank()) qw.eq(AgentCallLog::getStatus, status);
+        qw.orderByDesc(AgentCallLog::getCreateTime).last("LIMIT " + Math.min(limit, 500));
+        return list(qw);
     }
 
     private static String safeTrunc(String s, int max) {

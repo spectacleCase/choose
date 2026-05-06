@@ -39,6 +39,9 @@ public class AgentCallLog extends BasePo {
     /** 耗时ms */
     private Long elapsedMs;
 
+    /** Token 消耗 (估算) */
+    private Long tokenUsage;
+
     /** SUCCESS / FAIL */
     private String status;
 
